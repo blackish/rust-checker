@@ -1,0 +1,28 @@
+---
+
+hosts:
+  foo1:
+    addr: 8.8.8.8
+    check: icmp
+    interval: 30
+    mtu: 100
+    source_ip: 192.168.0.95
+    labels:
+      probe_name: dns1
+  foo2:
+    addr: 8.8.4.4
+    check: icmp
+    interval: 30
+    mtu: 100
+    source_ip: 192.168.0.95
+    labels:
+      probe_name: dns2
+
+processes:
+  stats:
+    match_labels:
+      probe_name: dns1
+    fielsds:
+    - avg
+    - low
+    - high
