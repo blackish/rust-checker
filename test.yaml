@@ -22,7 +22,8 @@ processes:
   stats:
     match_labels:
       probe_name: dns1
-    fielsds:
+    match_field: rtt
+    fields:
     - avg
     - low
     - high

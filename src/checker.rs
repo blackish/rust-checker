@@ -24,12 +24,14 @@ pub struct Checker {
     interval: i64,
     source_ip: String,
     name: String,
-    probes: Mutex<Vec<Probe>>
+    probes: Mutex<Vec<Probe>>,
+    labels: HashMap<String, String>
 }
 
 pub struct CheckResult {
     name: String,
-    values: HashMap<String, f64>
+    values: HashMap<String, f64>,
+    labels: HashMap<String, String>
 }
 
 enum ProbeResult {
@@ -52,7 +54,8 @@ impl Checker {
             mtu: config.mtu.clone(),
             interval: config.interval.clone(),
             source_ip: config.source_ip.clone(),
-            probes: Mutex::new(Vec::<Probe>::new())
+            probes: Mutex::new(Vec::<Probe>::new()),
+            labels: config.labels.clone()
         }
     }
 }
@@ -149,12 +152,14 @@ pub fn icmp_receiver(checker: &Arc<Checker>, mut sender: Sender<CheckResult>) {
                                     let finished_probe = probes.swap_remove(probe);
                                     let mut to_emit = CheckResult{
                                         name: checker.name.clone(),
-                                        values: HashMap::new()};
+                                        values: HashMap::new(),
+                                        labels: checker.labels.clone()};
                                     to_emit.values.insert(String::from("rtt"), now.duration_since(finished_probe.sent).as_millis() as f64);
                                     sender.send(to_emit).unwrap();
                                     let mut to_emit = CheckResult{
                                         name: checker.name.clone(),
-                                        values: HashMap::new()};
+                                        values: HashMap::new(),
+                                        labels: checker.labels.clone()};
                                     to_emit.values.insert(String::from("loss"), 0.0);
                                     sender.send(to_emit).unwrap();
                                     println!("{:?}", now.duration_since(finished_probe.sent));
@@ -181,7 +186,8 @@ pub fn icmp_receiver(checker: &Arc<Checker>, mut sender: Sender<CheckResult>) {
                     let finished_probe = probes.swap_remove(probe);
                     let mut to_emit = CheckResult{
                         name: checker.name.clone(),
-                        values: HashMap::new()};
+                        values: HashMap::new(),
+                        labels: checker.labels.clone()};
                     to_emit.values.insert(String::from("loss"), 1.0);
                     sender.send(to_emit).unwrap();
                     println!("Failed probe");
