@@ -29,9 +29,9 @@ pub struct Checker {
 }
 
 pub struct CheckResult {
-    name: String,
-    values: HashMap<String, f64>,
-    labels: HashMap<String, String>
+    pub name: String,
+    pub values: HashMap<String, f64>,
+    pub labels: HashMap<String, String>
 }
 
 enum ProbeResult {

@@ -5,7 +5,7 @@ pub mod process;
 
 use crate::config::{load_config};
 use crate::checker::{Checker, icmp_sender, icmp_receiver, CheckResult};
-use crate::process::{Stats, process_worker}
+use crate::process::{Stats, process_worker};
 
 use std::sync::{mpsc, Arc};
 use std::thread;
