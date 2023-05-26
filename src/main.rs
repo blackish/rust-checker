@@ -3,11 +3,19 @@ pub mod config;
 pub mod checker;
 pub mod process;
 pub mod output;
+pub mod output_print;
+pub mod selector;
+pub mod stats_process;
+pub mod pinger;
 
 use crate::config::{load_config};
-use crate::checker::{Checker, icmp_sender, icmp_receiver, CheckResult};
-use crate::process::{Stats, Processes, process_worker, selector_worker};
-use crate::output::{PrintOutput, output_worker};
+use crate::checker::CheckResult;
+use crate::pinger::{IcmpChecker, icmp_sender, icmp_receiver};
+use crate::process::{Processes, process_worker};
+use crate::selector::selector_worker;
+use crate::stats_process::Stats;
+use crate::output::output_worker;
+use crate::output_print::PrintOutput;
 
 use std::sync::{mpsc, Arc};
 use std::thread;
@@ -43,7 +51,7 @@ fn main() {
     let hosts = cfg.0;
     for c in hosts {
         if c.check_type == "icmp" {
-            let checker = Arc::new(Checker::new(&c));
+            let checker = Arc::new(IcmpChecker::new(&c));
             let sender = Arc::clone(&checker);
             let mut sender_tx = selector_tx.clone();
             let rcv = thread::spawn(move || {icmp_receiver(&sender, sender_tx)});

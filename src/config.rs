@@ -16,8 +16,9 @@ pub struct ProbeConfig {
     pub host: String,
     pub check_type: String,
     pub interval: i64,
-    pub mtu: i64,
-    pub source_ip: String,
+    //pub mtu: i64,
+    //pub source_ip: String,
+    pub config: HashMap<String, String>,
     pub labels: HashMap<String, String>
 }
 
@@ -73,8 +74,9 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                     host: value["addr"].clone().into_string().unwrap(),
                     check_type: value["check"].clone().into_string().unwrap(),
                     interval: value["interval"].clone().into_i64().unwrap(),
-                    mtu: value["mtu"].clone().into_i64().unwrap_or_default(),
-                    source_ip: value["source_ip"].clone().into_string().unwrap_or_default(),
+                    //mtu: value["mtu"].clone().into_i64().unwrap_or_default(),
+                    //source_ip: value["source_ip"].clone().into_string().unwrap_or_default(),
+                    config: HashMap::new(),
                     labels: HashMap::new()
                 };
                 host.labels.insert(String::from("name"), key.clone().into_string().unwrap());
@@ -82,6 +84,14 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                     yaml_rust::Yaml::Hash(ref l) => {
                         for (l_key, l_value) in l {
                             host.labels.insert(l_key.clone().into_string().unwrap(), l_value.clone().into_string().unwrap());
+                        }
+                    },
+                    _ => {}
+                }
+                match value["config"] {
+                    yaml_rust::Yaml::Hash(ref l) => {
+                        for (m_name, m_value) in l {
+                            host.config.insert(m_name.clone().into_string().unwrap(), m_value.clone().into_string().unwrap());
                         }
                     },
                     _ => {}
