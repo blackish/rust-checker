@@ -100,7 +100,7 @@ pub fn icmp_sender(checker: &Arc<IcmpChecker>) {
         ip.set_source(saddr);
         ip.set_checksum(checksum(&ip.packet(), 1));
         match icmpv4_tx.send_to(ip, IpAddr::V4(addr)) {
-            Ok(size) => {
+            Ok(_) => {
             },
             Err(e) => {
                 println!("Error sending {:?}", e);
@@ -111,7 +111,7 @@ pub fn icmp_sender(checker: &Arc<IcmpChecker>) {
     }
 }
 
-pub fn icmp_receiver(checker: &Arc<IcmpChecker>, mut sender: Sender<CheckResult>) {
+pub fn icmp_receiver(checker: &Arc<IcmpChecker>, sender: Sender<CheckResult>) {
     let (_, mut icmpv4_rx) = transport_channel(4096, Layer4(Ipv4(IpNextHeaderProtocols::Icmp))).unwrap();
     let mut host = checker.host.clone();
     let timeout = Duration::new(checker.interval as u64, 0);
@@ -167,7 +167,7 @@ pub fn icmp_receiver(checker: &Arc<IcmpChecker>, mut sender: Sender<CheckResult>
             let mut probes = checker.probes.lock().unwrap();
             for probe in 0..probes.len() {
                 if now.duration_since(probes[probe].sent) > timeout {
-                    let finished_probe = probes.swap_remove(probe);
+                    probes.swap_remove(probe);
                     let mut to_emit = CheckResult{
                         name: checker.name.clone(),
                         values: HashMap::new(),

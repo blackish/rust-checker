@@ -1,8 +1,5 @@
-use std::sync::mpsc::{Sender, Receiver, channel};
 use std::collections::HashMap;
 use crate::checker::CheckResult;
-use crate::config::ProcessConfig;
-use crate::config::OutputConfig;
 use crate::process::Processes;
 
 enum EmitStats {
@@ -58,7 +55,7 @@ impl Processes for Stats {
         }
         new_result.push(EmitStats::Number(1));
 
-        let mut to_process = probe.values.get(&self.to_process).unwrap().clone();
+        let to_process = probe.values.get(&self.to_process).unwrap().clone();
         self.stats.entry(probe.name.clone()).and_modify(|e| {
             for atomic_stat in e {
                 match atomic_stat {
@@ -86,7 +83,7 @@ impl Processes for Stats {
             }
         }).or_insert(new_result);
         if processed_probes >= self.interval {
-            let mut entry = self.stats.remove(&probe.name).unwrap();
+            let entry = self.stats.remove(&probe.name).unwrap();
             let mut check_to_emit = CheckResult{
                     name: probe.name,
                     values: HashMap::new(),

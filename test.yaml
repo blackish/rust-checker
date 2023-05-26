@@ -4,17 +4,19 @@ hosts:
   foo1:
     addr: 8.8.8.8
     check: icmp
-    interval: 30
-    mtu: 100
-    source_ip: 192.168.1.181
+    interval: 3
+    config:
+      mtu: "100"
+      source_ip: 192.168.1.181
     labels:
       probe_name: dns1
   foo2:
     addr: 8.8.4.4
     check: icmp
-    interval: 30
-    mtu: 100
-    source_ip: 192.168.1.181
+    interval: 1
+    config:
+      mtu: "100"
+      source_ip: 192.168.1.181
     labels:
       probe_name: dns2
 

@@ -1,10 +1,9 @@
-use std::sync::mpsc::{Sender, Receiver, channel};
-use std::collections::HashMap;
+use std::sync::mpsc::{Receiver, channel};
 use crate::checker::CheckResult;
 use crate::config::ProcessConfig;
 use crate::config::OutputConfig;
 
-pub fn selector_worker(mut receiver: Receiver<CheckResult>, processes: Vec<ProcessConfig>, outputs: Vec<OutputConfig>) {
+pub fn selector_worker(receiver: Receiver<CheckResult>, processes: Vec<ProcessConfig>, outputs: Vec<OutputConfig>) {
     loop {
         let probe = receiver.recv().unwrap();
         let mut gone_for_processing = false;

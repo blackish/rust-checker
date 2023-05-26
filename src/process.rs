@@ -1,15 +1,12 @@
-use std::sync::mpsc::{Sender, Receiver, channel};
-use std::collections::HashMap;
+use std::sync::mpsc::{Sender, Receiver};
 use crate::checker::CheckResult;
-use crate::config::ProcessConfig;
-use crate::config::OutputConfig;
 
 pub trait Processes {
     fn process_probe(&mut self, probe: CheckResult);
     fn get_to_emit(&mut self) -> Vec<CheckResult>;
 }
 
-pub fn process_worker<T: Processes>(mut stats: T, mut sender: Sender<CheckResult>, mut receiver: Receiver<CheckResult>) {
+pub fn process_worker<T: Processes>(mut stats: T, sender: Sender<CheckResult>, receiver: Receiver<CheckResult>) {
     loop {
         let probe = receiver.recv();
         match probe {

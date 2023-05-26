@@ -4,7 +4,7 @@ use std::fs;
 use std::process;
 use rand::random;
 use std::collections::HashMap;
-use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc::Sender;
 use crate::checker::{CheckResult};
 
 struct CmdOptions {
