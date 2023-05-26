@@ -6,7 +6,7 @@ hosts:
     check: icmp
     interval: 30
     mtu: 100
-    source_ip: 192.168.0.95
+    source_ip: 192.168.1.181
     labels:
       probe_name: dns1
   foo2:
@@ -14,16 +14,51 @@ hosts:
     check: icmp
     interval: 30
     mtu: 100
-    source_ip: 192.168.0.95
+    source_ip: 192.168.1.181
     labels:
       probe_name: dns2
 
 processes:
-  stats:
-    match_labels:
-      probe_name: dns1
-    match_field: rtt
-    fields:
-    - avg
-    - low
-    - high
+- process_name: stats
+  interval: 5
+  labels_to_add:
+    stats: rtt
+  match_labels:
+    probe_name:
+    - dns1
+    - dns2
+    name:
+    - foo1
+    - foo2
+  match_value: rtt
+  values:
+  - avg
+  - low
+  - high
+- process_name: stats
+  interval: 5
+  labels_to_add:
+    stats: loss
+  match_labels:
+    probe_name:
+    - dns1
+    - dns2
+    name:
+    - foo1
+    - foo2
+  match_value: loss
+  values:
+  - sum
+
+outputs:
+- output_name: print
+  match_labels:
+    probe_name:
+    - dns1
+    - dns2
+    name:
+    - foo1
+    - foo2
+    stats:
+    - stats1
+  config: {}

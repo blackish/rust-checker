@@ -4,6 +4,8 @@ use std::fs;
 use std::process;
 use rand::random;
 use std::collections::HashMap;
+use std::sync::mpsc::{Sender, Receiver};
+use crate::checker::{CheckResult};
 
 struct CmdOptions {
     verbose: bool,
@@ -21,11 +23,23 @@ pub struct ProbeConfig {
 
 pub struct ProcessConfig {
     pub id: u16,
-    pub name: String,
-    pub matches: HashMap<String, String>
+    pub process_name: String,
+    pub labels_to_add: HashMap<String, String>,
+    pub match_labels: HashMap<String, Vec<String>>,
+    pub values: Vec<String>,
+    pub sender: Option<Sender<CheckResult>>,
+    pub match_value: String
 }
 
-pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>) {
+pub struct OutputConfig {
+    pub id: u16,
+    pub output_name: String,
+    pub match_labels: HashMap<String, Vec<String>>,
+    pub sender: Option<Sender<CheckResult>>,
+    pub config: HashMap<String, String>
+}
+
+pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>) {
     let mut cmd_opts = CmdOptions{verbose: false, name: String::from("none")};
     {
         let mut parser = ArgumentParser::new();
@@ -80,24 +94,101 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>) {
     }
     let mut processes = Vec::<ProcessConfig>::new();
     match cfg[0]["processes"] {
-        yaml_rust::Yaml::Hash(ref h) => {
-            for (key, value) in h {
+        yaml_rust::Yaml::Array(ref h) => {
+            for value in h {
                 let mut process = ProcessConfig{
                     id: random::<u16>(),
-                    name: key.clone().into_string().unwrap(),
-                    matches: HashMap::new()
+                    process_name: value["process_name"].clone().into_string().unwrap(),
+                    match_value: value["match_value"].clone().into_string().unwrap(),
+                    values: Vec::new(),
+                    labels_to_add: HashMap::new(),
+                    sender: None,
+                    match_labels: HashMap::new()
                 };
                 match value["match_labels"] {
                     yaml_rust::Yaml::Hash(ref l) => {
                         for (m_name, m_value) in l {
-                            process.matches.insert(m_name.clone().into_string().unwrap(), m_value.clone().into_string().unwrap());
+                            let mut match_values = Vec::new();
+                            match m_value {
+                                yaml_rust::Yaml::String(ref s) => {
+                                    match_values.push(s.clone());
+                                },
+                                yaml_rust::Yaml::Array(ref s) => {
+                                    for s_val in s {
+                                        match_values.push(s_val.clone().into_string().unwrap());
+                                    }
+                                },
+                                _ => {}
+                            }
+                            process.match_labels.insert(m_name.clone().into_string().unwrap(), match_values);
                         }
                     },
                     _ => {}
                 }
+                match value["labels_to_add"] {
+                    yaml_rust::Yaml::Hash(ref l) => {
+                        for (m_name, m_value) in l {
+                            process.labels_to_add.insert(m_name.clone().into_string().unwrap(), m_value.clone().into_string().unwrap());
+                        }
+                    },
+                    _ => {}
+                }
+                match value["values"] {
+                    yaml_rust::Yaml::Array(ref l) => {
+                        for v in l {
+                            process.values.push(v.clone().into_string().unwrap());
+                        }
+                    },
+                    _ => {}
+                }
+                processes.push(process);
             }
         },
         _ => {}
     }
-    return (probes, processes);
+    let mut outputs = Vec::<OutputConfig>::new();
+    match cfg[0]["outputs"] {
+        yaml_rust::Yaml::Array(ref h) => {
+            for value in h {
+                let mut output = OutputConfig {
+                    output_name: value["output_name"].clone().into_string().unwrap(),
+                    id: random::<u16>(),
+                    sender: None,
+                    config: HashMap::new(),
+                    match_labels: HashMap::new()
+                };
+                match value["match_labels"] {
+                    yaml_rust::Yaml::Hash(ref l) => {
+                        for (m_name, m_value) in l {
+                            let mut match_values = Vec::new();
+                            match m_value {
+                                yaml_rust::Yaml::String(ref s) => {
+                                    match_values.push(s.clone());
+                                },
+                                yaml_rust::Yaml::Array(ref s) => {
+                                    for s_val in s {
+                                        match_values.push(s_val.clone().into_string().unwrap());
+                                    }
+                                },
+                                _ => {}
+                            }
+                            output.match_labels.insert(m_name.clone().into_string().unwrap(), match_values);
+                        }
+                    },
+                    _ => {}
+                }
+                match value["config"] {
+                    yaml_rust::Yaml::Hash(ref l) => {
+                        for (m_name, m_value) in l {
+                            output.config.insert(m_name.clone().into_string().unwrap(), m_value.clone().into_string().unwrap());
+                        }
+                    },
+                    _ => {}
+                }
+                outputs.push(output);
+            }
+        },
+        _ => {}
+    }
+    return (probes, processes, outputs);
 }

@@ -31,7 +31,8 @@ pub struct Checker {
 pub struct CheckResult {
     pub name: String,
     pub values: HashMap<String, f64>,
-    pub labels: HashMap<String, String>
+    pub labels: HashMap<String, String>,
+    pub processes: Vec<u16>
 }
 
 enum ProbeResult {
@@ -100,7 +101,6 @@ pub fn icmp_sender(checker: &Arc<Checker>) {
         icmp.set_icmp_type(IcmpTypes::EchoRequest);
         icmp.set_payload(&payload[..]);
         icmp.set_checksum(checksum(&icmp.packet(), 1));
-        println!("{:?}", &icmp);
         let mut ip = ipv4::MutableIpv4Packet::new(&mut ip_packet[..]).unwrap();
         ip.set_next_level_protocol(IpNextHeaderProtocols::Icmp);
         ip.set_ttl(255);
@@ -114,7 +114,6 @@ pub fn icmp_sender(checker: &Arc<Checker>) {
         ip.set_checksum(checksum(&ip.packet(), 1));
         match icmpv4_tx.send_to(ip, IpAddr::V4(addr)) {
             Ok(size) => {
-                println!("Sent {:?}", size);
             },
             Err(e) => {
                 println!("Error sending {:?}", e);
@@ -122,7 +121,6 @@ pub fn icmp_sender(checker: &Arc<Checker>) {
         }
         checker.probes.lock().unwrap().push(Probe{identifier: id, seq: seq, sent: Instant::now()});
         thread::sleep(Duration::from_secs(5));
-        println!("{:?}", &checker.host);
     }
 }
 
@@ -148,21 +146,21 @@ pub fn icmp_receiver(checker: &Arc<Checker>, mut sender: Sender<CheckResult>) {
                             let mut probes = checker.probes.lock().unwrap();
                             for probe in 0..probes.len() {
                                 if probes[probe].identifier == echo_reply.get_identifier() && probes[probe].seq == echo_reply.get_sequence_number() {
-                                    println!("Got reply from {:?}", raddr);
                                     let finished_probe = probes.swap_remove(probe);
                                     let mut to_emit = CheckResult{
                                         name: checker.name.clone(),
                                         values: HashMap::new(),
+                                        processes: Vec::new(),
                                         labels: checker.labels.clone()};
                                     to_emit.values.insert(String::from("rtt"), now.duration_since(finished_probe.sent).as_millis() as f64);
                                     sender.send(to_emit).unwrap();
                                     let mut to_emit = CheckResult{
                                         name: checker.name.clone(),
                                         values: HashMap::new(),
+                                        processes: Vec::new(),
                                         labels: checker.labels.clone()};
                                     to_emit.values.insert(String::from("loss"), 0.0);
                                     sender.send(to_emit).unwrap();
-                                    println!("{:?}", now.duration_since(finished_probe.sent));
                                 }
                             }
                         }
@@ -187,10 +185,10 @@ pub fn icmp_receiver(checker: &Arc<Checker>, mut sender: Sender<CheckResult>) {
                     let mut to_emit = CheckResult{
                         name: checker.name.clone(),
                         values: HashMap::new(),
+                        processes: Vec::new(),
                         labels: checker.labels.clone()};
                     to_emit.values.insert(String::from("loss"), 1.0);
                     sender.send(to_emit).unwrap();
-                    println!("Failed probe");
                 }
             }
         }
