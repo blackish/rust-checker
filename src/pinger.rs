@@ -107,14 +107,14 @@ pub fn icmp_sender(checker: &Arc<IcmpChecker>) {
             }
         }
         checker.probes.lock().unwrap().push(Probe{identifier: id, seq: seq, sent: Instant::now()});
-        thread::sleep(Duration::from_secs(5));
+        thread::sleep(Duration::from_secs(checker.interval as u64));
     }
 }
 
 pub fn icmp_receiver(checker: &Arc<IcmpChecker>, sender: Sender<CheckResult>) {
     let (_, mut icmpv4_rx) = transport_channel(4096, Layer4(Ipv4(IpNextHeaderProtocols::Icmp))).unwrap();
     let mut host = checker.host.clone();
-    let timeout = Duration::new(checker.interval as u64, 0);
+    let timeout = Duration::new(1, 0);
     host.push_str(":0");
     let addr = host.to_socket_addrs()
         .unwrap()
@@ -165,9 +165,9 @@ pub fn icmp_receiver(checker: &Arc<IcmpChecker>, sender: Sender<CheckResult>) {
         {
             let now = Instant::now();
             let mut probes = checker.probes.lock().unwrap();
-            for probe in 0..probes.len() {
-                if now.duration_since(probes[probe].sent) > timeout {
-                    probes.swap_remove(probe);
+            for probe in probes.len()..0 {
+                if now.duration_since(probes[probe-1].sent) > timeout {
+                    probes.swap_remove(probe-1);
                     let mut to_emit = CheckResult{
                         name: checker.name.clone(),
                         values: HashMap::new(),
