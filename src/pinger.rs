@@ -101,12 +101,12 @@ pub fn icmp_sender(checker: &Arc<IcmpChecker>) {
         ip.set_checksum(checksum(&ip.packet(), 1));
         match icmpv4_tx.send_to(ip, IpAddr::V4(addr)) {
             Ok(_) => {
+                checker.probes.lock().unwrap().push(Probe{identifier: id, seq: seq, sent: Instant::now()});
             },
             Err(e) => {
                 println!("Error sending {:?}", e);
             }
         }
-        checker.probes.lock().unwrap().push(Probe{identifier: id, seq: seq, sent: Instant::now()});
         thread::sleep(Duration::from_secs(checker.interval as u64));
     }
 }
