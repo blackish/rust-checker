@@ -147,6 +147,7 @@ pub fn icmp_receiver(checker: &Arc<IcmpChecker>, sender: Sender<CheckResult>) {
                                         labels: checker.labels.clone()};
                                     to_emit.values.insert(String::from("loss"), 0.0);
                                     sender.send(to_emit).unwrap();
+                                    break;
                                 }
                             }
                         }

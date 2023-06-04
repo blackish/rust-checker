@@ -7,9 +7,11 @@ pub mod output_print;
 pub mod selector;
 pub mod stats_process;
 pub mod pinger;
+pub mod syn_pinger;
 
 use crate::config::{load_config};
 use crate::pinger::{IcmpChecker, icmp_sender, icmp_receiver};
+use crate::syn_pinger::{SynChecker, syn_sender, syn_receiver};
 use crate::process::process_worker;
 use crate::selector::selector_worker;
 use crate::stats_process::Stats;
@@ -58,6 +60,15 @@ fn main() {
             pinger_handles.push(rcv);
             let sender = Arc::clone(&checker);
             let rcv = thread::spawn(move || {icmp_sender(&sender)});
+            pinger_handles.push(rcv);
+        } else if c.check_type == "syn" {
+            let checker = Arc::new(SynChecker::new(&c));
+            let sender = Arc::clone(&checker);
+            let sender_tx = selector_tx.clone();
+            let rcv = thread::spawn(move || {syn_receiver(&sender, sender_tx)});
+            pinger_handles.push(rcv);
+            let sender = Arc::clone(&checker);
+            let rcv = thread::spawn(move || {syn_sender(&sender)});
             pinger_handles.push(rcv);
         }
         println!("{:?} {:?} {:?}", &c.host, &c.check_type, &c.interval);
