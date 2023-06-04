@@ -106,7 +106,7 @@ pub fn syn_sender(checker: &Arc<SynChecker>) {
         ip.set_checksum(checksum(ip.packet(), 1));
         match tx.send_to(ip, IpAddr::V4(addr)) {
             Ok(_) => {
-                checker.probes.lock().unwrap().push(Probe{seq: seq, sent: Instant::now()});
+                checker.probes.lock().unwrap().push(Probe{seq: seq+1, sent: Instant::now()});
             },
             Err(e) => {
                 println!("Error sending {:?}", e)
@@ -131,11 +131,11 @@ pub fn syn_receiver(checker: &Arc<SynChecker>, sender: Sender<CheckResult>) {
         match iter.next_with_timeout(timeout) {
             Ok(result) => match result {
                 Some((packet, raddr)) => {
-                    if raddr == addr && packet.get_source() == checker.port && packet.get_destination() == 65535 {
+                    if raddr == addr && packet.get_source() == checker.port && packet.get_destination() == 6535 {
                         let now = Instant::now();
                         let mut probes = checker.probes.lock().unwrap();
                         for probe in 0..probes.len() {
-                            if probes[probe].seq + 1 == packet.get_acknowledgement() {
+                            if probes[probe].seq == packet.get_acknowledgement() {
                                 let finished_probe = probes.swap_remove(probe);
                                 let mut to_emit = CheckResult{
                                     name: checker.name.clone(),

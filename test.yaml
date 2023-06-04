@@ -7,16 +7,16 @@ hosts:
     interval: 3
     config:
       mtu: "100"
-      source_ip: 192.168.1.181
+      source_ip: 92.223.65.188
     labels:
       probe_name: dns1
   foo2:
-    addr: 8.8.4.4
-    check: icmp
+    addr: 213.108.129.5
+    check: syn
     interval: 1
     config:
-      mtu: "100"
-      source_ip: 192.168.1.181
+      port: "2223"
+      source_ip: 92.223.65.188
     labels:
       probe_name: dns2
 
