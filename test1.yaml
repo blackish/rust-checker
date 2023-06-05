@@ -10,15 +10,6 @@ hosts:
       source_ip: 192.168.0.95
     labels:
       probe_name: dns1
-  foo2:
-    addr: 213.108.129.5
-    check: syn
-    interval: 1
-    config:
-      port: "2223"
-      source_ip: 192.168.0.95
-    labels:
-      probe_name: dns2
 
 processes:
 - process_name: stats
@@ -61,6 +52,15 @@ outputs:
     name:
     - foo1
     - foo2
+    - Tonic
+    first:
+    - "1"
     stats:
     - stats1
   config: {}
+- output_name: remote_sender
+  match_labels:
+    probe_name:
+    - nonexistent
+  config:
+    address: 192.168.1.1
