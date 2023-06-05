@@ -8,8 +8,11 @@ pub mod selector;
 pub mod stats_process;
 pub mod pinger;
 pub mod syn_pinger;
+pub mod remote_pinger;
+pub mod output_sender;
 
-use crate::config::{load_config};
+use crate::config::load_config;
+use crate::remote_pinger::run_server;
 use crate::pinger::{IcmpChecker, icmp_sender, icmp_receiver};
 use crate::syn_pinger::{SynChecker, syn_sender, syn_receiver};
 use crate::process::process_worker;
@@ -17,6 +20,7 @@ use crate::selector::selector_worker;
 use crate::stats_process::Stats;
 use crate::output::output_worker;
 use crate::output_print::PrintOutput;
+use crate::output_sender::RemoteOutput;
 
 use std::sync::{mpsc, Arc};
 use std::thread;
@@ -46,9 +50,19 @@ fn main() {
             pinger_handles.push(rcv);
             o.sender = Some(output_tx);
             outputs.push(o);
+        } else if o.output_name == "remote_sender" {
+            let output = RemoteOutput::new(&o);
+            let (output_tx, output_rx) = mpsc::channel();
+            let rcv = thread::spawn(move || { output_worker(output, output_rx) });
+            pinger_handles.push(rcv);
+            o.sender = Some(output_tx);
+            outputs.push(o);
         }
     }
     let rcv = thread::spawn(move || { selector_worker(selector_rx, processes, outputs) });
+    pinger_handles.push(rcv);
+    let sender_tx = selector_tx.clone();
+    let rcv = thread::spawn(move || { run_server(sender_tx) });
     pinger_handles.push(rcv);
     let hosts = cfg.0;
     for c in hosts {

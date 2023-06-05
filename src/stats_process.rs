@@ -3,10 +3,10 @@ use crate::checker::CheckResult;
 use crate::process::Processes;
 
 enum EmitStats {
-    Avg(f64),
-    Low(f64),
-    High(f64),
-    Sum(f64),
+    Avg(f32),
+    Low(f32),
+    High(f32),
+    Sum(f32),
     Number(i32)
 }
 
@@ -94,7 +94,7 @@ impl Processes for Stats {
             for atomic_stat in entry {
                 match atomic_stat {
                     EmitStats::Avg(s) => {
-                        _ = check_to_emit.values.insert(String::from("avg"), s / processed_probes as f64);
+                        _ = check_to_emit.values.insert(String::from("avg"), s / processed_probes as f32);
                     },
                     EmitStats::Low(s) => _ = check_to_emit.values.insert(String::from("low"), s),
                     EmitStats::High(s) => _ = check_to_emit.values.insert(String::from("high"), s),

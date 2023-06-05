@@ -142,7 +142,7 @@ pub fn syn_receiver(checker: &Arc<SynChecker>, sender: Sender<CheckResult>) {
                                     values: HashMap::new(),
                                     processes: Vec::new(),
                                     labels: checker.labels.clone()};
-                                to_emit.values.insert(String::from("rtt"), now.duration_since(finished_probe.sent).as_millis() as f64);
+                                to_emit.values.insert(String::from("rtt"), now.duration_since(finished_probe.sent).as_millis() as f32);
                                 sender.send(to_emit).unwrap();
                                 let mut to_emit = CheckResult{
                                     name: checker.name.clone(),
