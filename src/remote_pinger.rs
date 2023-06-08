@@ -44,7 +44,7 @@ impl RemoteProbe for ProbeReceiver {
 
 #[tokio::main]
 pub async fn run_server(to_sender: Sender<CheckResult>) {
-    let addr = "[::1]:50051".parse().unwrap();
+    let addr = "0.0.0.0:50051".parse().unwrap();
     let greeter = ProbeReceiver::new(to_sender);
 
     Server::builder()
