@@ -61,9 +61,6 @@ fn main() {
     }
     let rcv = thread::spawn(move || { selector_worker(selector_rx, processes, outputs) });
     pinger_handles.push(rcv);
-    let sender_tx = selector_tx.clone();
-    let rcv = thread::spawn(move || { run_server(sender_tx) });
-    pinger_handles.push(rcv);
     let hosts = cfg.0;
     for c in hosts {
         if c.check_type == "icmp" {
@@ -83,6 +80,10 @@ fn main() {
             pinger_handles.push(rcv);
             let sender = Arc::clone(&checker);
             let rcv = thread::spawn(move || {syn_sender(&sender)});
+            pinger_handles.push(rcv);
+        } else if c.check_type == "remote_listener" {
+            let sender_tx = selector_tx.clone();
+            let rcv = thread::spawn(move || { run_server(sender_tx) });
             pinger_handles.push(rcv);
         }
         println!("{:?} {:?} {:?}", &c.host, &c.check_type, &c.interval);

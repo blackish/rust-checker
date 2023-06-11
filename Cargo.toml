@@ -8,11 +8,13 @@ edition = "2021"
 [dependencies]
 yaml-rust = "0.4"
 argparse = "0.2.2"
+futures = "*"
 pnet = "*"
 rand = "*"
 prost = "*"
 tonic = "*"
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+async-stream = "*"
 
 [build-dependencies]
 tonic-build = "0.9"

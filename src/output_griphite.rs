@@ -3,8 +3,7 @@ use crate::output::Outputs;
 use crate::config::OutputConfig;
 
 pub struct GraphiteOutput {
-    address: String,
-    retry: i32
+    address: String
 }
 
 impl GraphiteOutput {
@@ -13,7 +12,7 @@ impl GraphiteOutput {
     }
 }
 
-impl Outputs for RemoteOutput {
+impl Outputs for GraphiteOutput {
 #[tokio::main]
     async fn process_probe(&mut self, probe: CheckResult) {
         let current_probe = probe;

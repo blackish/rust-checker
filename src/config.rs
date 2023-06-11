@@ -9,6 +9,7 @@ use crate::checker::{CheckResult};
 
 struct CmdOptions {
     verbose: bool,
+    remote_listener: bool,
     name: String,
 }
 
@@ -41,12 +42,17 @@ pub struct OutputConfig {
 }
 
 pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>) {
-    let mut cmd_opts = CmdOptions{verbose: false, name: String::from("none")};
+    let mut cmd_opts = CmdOptions{
+        verbose: false,
+        remote_listener: false,
+        name: String::from("none")};
     {
         let mut parser = ArgumentParser::new();
         parser.set_description("yaml config parser");
         parser.refer(&mut cmd_opts.verbose)
             .add_option(&["-v"], StoreTrue, "Be verbose");
+        parser.refer(&mut cmd_opts.remote_listener)
+            .add_option(&["-r"], StoreTrue, "Start remote listener");
         parser.refer(&mut cmd_opts.name)
             .add_option(&["-c", "--config"], Store, "Config file")
             .required();
@@ -74,8 +80,6 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                     host: value["addr"].clone().into_string().unwrap(),
                     check_type: value["check"].clone().into_string().unwrap(),
                     interval: value["interval"].clone().into_i64().unwrap(),
-                    //mtu: value["mtu"].clone().into_i64().unwrap_or_default(),
-                    //source_ip: value["source_ip"].clone().into_string().unwrap_or_default(),
                     config: HashMap::new(),
                     labels: HashMap::new()
                 };
@@ -97,8 +101,17 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                     _ => {}
                 }
                 probes.push(host);
-                
             };
+            if cmd_opts.remote_listener {
+                probes.push(
+                    ProbeConfig{
+                        host: format!("remote_listener"),
+                        check_type: format!("remote_listener"),
+                        interval: 0,
+                        config: HashMap::new(),
+                        labels: HashMap::new()
+                    });
+            }
         },
         _ => {}
     }

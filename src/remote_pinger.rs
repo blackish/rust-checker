@@ -1,6 +1,7 @@
 use std::sync::mpsc::Sender;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tonic::{transport::Server, Request, Response, Status};
+use futures::{StreamExt};
 use crate::checker::CheckResult;
 
 use remote_checker::remote_probe_server::{RemoteProbe, RemoteProbeServer};
@@ -10,12 +11,12 @@ pub mod remote_checker {
 }
 
 struct ProbeReceiver {
-    sender: Mutex<Sender<CheckResult>>
+    sender: Arc<Mutex<Sender<CheckResult>>>
 }
 
 impl ProbeReceiver {
     fn new(to_sender: Sender<CheckResult>) -> Self {
-        return Self {sender: Mutex::new(to_sender)}
+        return Self {sender: Arc::new(Mutex::new(to_sender))}
     }
 }
 
@@ -23,21 +24,25 @@ impl ProbeReceiver {
 impl RemoteProbe for ProbeReceiver {
     async fn get_probe(
         &self,
-        request: Request<ProbeRequest>,
+        request: Request<tonic::Streaming<ProbeRequest>>,
     ) -> Result<Response<ProbeReply>, Status> {
-        let probe = request.into_inner();
-        let new_probe = CheckResult{
-            name: probe.name,
-            labels: probe.labels,
-            values: probe.values,
-            processes: Vec::new()
-        };
-        println!("Got a request: {:?}", new_probe);
+        let mut stream = request.into_inner();
         let reply = ProbeReply {
-            message: format!("Hello {}!", &new_probe.name),
+            message: format!("Ok"),
             result: true,
         };
-        self.sender.lock().unwrap().send(new_probe).unwrap();
+        println!("Starting listener");
+        while let Some(probe) = stream.next().await {
+            let probe = probe?;
+            let new_probe = CheckResult{
+                name: probe.name,
+                labels: probe.labels,
+                values: probe.values,
+                processes: Vec::new()
+            };
+            println!("{:?}", new_probe);
+            self.sender.lock().unwrap().send(new_probe).unwrap();
+        }
         Ok(Response::new(reply))
     }
 }

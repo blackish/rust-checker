@@ -21,7 +21,7 @@ option java_outer_classname = "RustCheckerProto";
 package rust_checker;
 
 service RemoteProbe {
-  rpc GetProbe (ProbeRequest) returns (ProbeReply) {}
+  rpc GetProbe (stream ProbeRequest) returns (ProbeReply) {}
 }
 
 message ProbeRequest {

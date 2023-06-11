@@ -1,7 +1,7 @@
 ---
 
 hosts:
-  foo1:
+  remote_foo:
     addr: 8.8.8.8
     check: icmp
     interval: 3
@@ -11,56 +11,14 @@ hosts:
     labels:
       probe_name: dns1
 
-processes:
-- process_name: stats
-  interval: 5
-  labels_to_add:
-    stats: rtt
-  match_labels:
-    probe_name:
-    - dns1
-    - dns2
-    name:
-    - foo1
-    - foo2
-  match_value: rtt
-  values:
-  - avg
-  - low
-  - high
-- process_name: stats
-  interval: 5
-  labels_to_add:
-    stats: loss
-  match_labels:
-    probe_name:
-    - dns1
-    - dns2
-    name:
-    - foo1
-    - foo2
-  match_value: loss
-  values:
-  - sum
+processes: []
 
 outputs:
-- output_name: print
-  match_labels:
-    probe_name:
-    - dns1
-    - dns2
-    name:
-    - foo1
-    - foo2
-    - Tonic
-    first:
-    - "1"
-    stats:
-    - stats1
-  config: {}
 - output_name: remote_sender
   match_labels:
     probe_name:
-    - nonexistent
+    - dns1
+    name:
+    - remote_foo
   config:
-    address: 192.168.1.1
+    address: 127.0.0.1
