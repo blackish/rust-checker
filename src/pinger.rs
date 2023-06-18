@@ -37,7 +37,7 @@ struct Probe {
 impl IcmpChecker {
     pub fn new(config: &ProbeConfig) -> Self {
         Self{
-            name: config.labels.get(&String::from("name")).clone().unwrap().to_string(),
+            name: config.name.clone(),
             host: config.host.clone(),
             mtu: config.config.get("mtu").unwrap().parse().unwrap(),
             interval: config.interval.clone(),

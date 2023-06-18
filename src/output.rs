@@ -6,15 +6,7 @@ pub trait Outputs {
 }
 
 pub fn output_worker<T: Outputs>(mut output: T, receiver: Receiver<CheckResult>) {
-    loop {
-        let probe = receiver.recv();
-        match probe {
-            Err(_) => {
-                panic!("Stats processor has received an error");
-            },
-            Ok(new_probe) => {
-                output.process_probe(new_probe);
-            }
-        }
+    for new_probe in receiver {
+        output.process_probe(new_probe);
     }
 }

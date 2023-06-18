@@ -33,7 +33,7 @@ fn main() {
     for mut p in cfg.1 {
         if p.process_name == "stats" {
             let (process_tx, process_rx) = mpsc::channel();
-            let processor = Stats::new(p.values.clone(), p.match_value.clone(), 5, p.labels_to_add.clone(), p.id.clone());
+            let processor = Stats::new(p.values.clone(), p.match_value.clone(), p.keep_name.clone(), p.labels_to_add.clone(), p.config.clone(), p.id.clone());
             let to_selector = selector_tx.clone();
             let rcv = thread::spawn(move || { process_worker(processor, to_selector, process_rx) });
             p.sender = Some(process_tx);

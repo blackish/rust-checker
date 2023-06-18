@@ -11,6 +11,7 @@ enum EmitStats {
 }
 
 pub struct Stats {
+    keep_name: bool,
     stats_to_emit: Vec<String>,
     stats: HashMap<String, Vec<EmitStats>>,
     to_process: String,
@@ -21,12 +22,13 @@ pub struct Stats {
 }
 
 impl Stats {
-    pub fn new(stats: Vec<String>, metric_name: String, stats_interval: i32, labels_to_add: HashMap<String, String>, id: u16) -> Self {
+    pub fn new(stats: Vec<String>, metric_name: String, keep_name: bool, labels_to_add: HashMap<String, String>, config: HashMap<String, String>, id: u16) -> Self {
         Self {
+            keep_name: keep_name,
             stats_to_emit: stats,
             stats: HashMap::new(),
             to_process: metric_name,
-            interval: stats_interval,
+            interval: config.get("interval").unwrap().parse().unwrap(),
             to_emit: Vec::new(),
             id: id,
             labels_to_add: labels_to_add
@@ -101,6 +103,9 @@ impl Processes for Stats {
                     EmitStats::Sum(s) => _ = check_to_emit.values.insert(String::from("sum"), s),
                     _ => {}
                 }
+            }
+            if self.keep_name {
+                check_to_emit.labels.insert(String::from("value"), self.to_process.clone());
             }
             self.to_emit.push(check_to_emit);
         }

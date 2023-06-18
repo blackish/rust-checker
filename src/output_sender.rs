@@ -42,7 +42,7 @@ async fn stream_probe(address: String, mut rx: mpsc::Receiver<ProbeRequest>) {
     };
     let request = Request::new(probe_stream);
     match client.get_probe(request).await {
-        Ok(response) => println!("{:?}", response),
+        Ok(response) => {},
         Err(_) => println!("Error")
     }
 }

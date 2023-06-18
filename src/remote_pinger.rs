@@ -31,7 +31,6 @@ impl RemoteProbe for ProbeReceiver {
             message: format!("Ok"),
             result: true,
         };
-        println!("Starting listener");
         while let Some(probe) = stream.next().await {
             let probe = probe?;
             let new_probe = CheckResult{
@@ -40,7 +39,6 @@ impl RemoteProbe for ProbeReceiver {
                 values: probe.values,
                 processes: Vec::new()
             };
-            println!("{:?}", new_probe);
             self.sender.lock().unwrap().send(new_probe).unwrap();
         }
         Ok(Response::new(reply))

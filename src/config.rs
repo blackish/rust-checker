@@ -14,6 +14,7 @@ struct CmdOptions {
 }
 
 pub struct ProbeConfig {
+    pub name: String,
     pub host: String,
     pub check_type: String,
     pub interval: i64,
@@ -26,11 +27,13 @@ pub struct ProbeConfig {
 pub struct ProcessConfig {
     pub id: u16,
     pub process_name: String,
+    pub keep_name: bool,
     pub labels_to_add: HashMap<String, String>,
     pub match_labels: HashMap<String, Vec<String>>,
     pub values: Vec<String>,
     pub sender: Option<Sender<CheckResult>>,
-    pub match_value: String
+    pub match_value: String,
+    pub config: HashMap<String, String>,
 }
 
 pub struct OutputConfig {
@@ -77,13 +80,14 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
         yaml_rust::Yaml::Hash(ref h) => {
             for (key, value) in h {
                 let mut host = ProbeConfig{
+                    name: key.clone().into_string().unwrap(),
                     host: value["addr"].clone().into_string().unwrap(),
                     check_type: value["check"].clone().into_string().unwrap(),
                     interval: value["interval"].clone().into_i64().unwrap(),
                     config: HashMap::new(),
                     labels: HashMap::new()
                 };
-                host.labels.insert(String::from("name"), key.clone().into_string().unwrap());
+                //host.labels.insert(String::from("name"), key.clone().into_string().unwrap());
                 match value["labels"] {
                     yaml_rust::Yaml::Hash(ref l) => {
                         for (l_key, l_value) in l {
@@ -105,6 +109,7 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
             if cmd_opts.remote_listener {
                 probes.push(
                     ProbeConfig{
+                        name: format!("remote_listener"),
                         host: format!("remote_listener"),
                         check_type: format!("remote_listener"),
                         interval: 0,
@@ -121,11 +126,13 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
             for value in h {
                 let mut process = ProcessConfig{
                     id: random::<u16>(),
+                    keep_name: value["keep_name"].clone().as_bool().unwrap_or_default(),
                     process_name: value["process_name"].clone().into_string().unwrap(),
                     match_value: value["match_value"].clone().into_string().unwrap(),
                     values: Vec::new(),
                     labels_to_add: HashMap::new(),
                     sender: None,
+                    config: HashMap::new(),
                     match_labels: HashMap::new()
                 };
                 match value["match_labels"] {
@@ -160,6 +167,15 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                     yaml_rust::Yaml::Array(ref l) => {
                         for v in l {
                             process.values.push(v.clone().into_string().unwrap());
+                        }
+                    },
+                    _ => {}
+                }
+                match value["config"] {
+                    yaml_rust::Yaml::Hash(ref l) => {
+                        for (m_name, m_value) in l {
+                            println!("{:?} {:?}", m_name, m_value);
+                            process.config.insert(m_name.clone().into_string().unwrap(), m_value.clone().into_string().unwrap());
                         }
                     },
                     _ => {}

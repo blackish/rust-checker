@@ -13,32 +13,30 @@ hosts:
 
 processes:
 - process_name: stats
-  interval: 5
+  config:
+    interval: "5"
   labels_to_add:
     stats: rtt
   match_labels:
     probe_name:
     - dns1
     - dns2
-    name:
-    - foo1
-    - foo2
+    - remote_probe
   match_value: rtt
   values:
   - avg
   - low
   - high
 - process_name: stats
-  interval: 5
+  config:
+    interval: "5"
   labels_to_add:
     stats: loss
   match_labels:
     probe_name:
     - dns1
     - dns2
-    name:
-    - foo1
-    - foo2
+    - remote_probe
   match_value: loss
   values:
   - sum
@@ -49,10 +47,9 @@ outputs:
     probe_name:
     - dns1
     - dns2
-    name:
-    - foo1
-    - foo2
-    - remote_foo
+    - remote_probe
     stats:
     - stats1
+    - loss
+    - rtt
   config: {}

@@ -9,7 +9,7 @@ hosts:
       mtu: "100"
       source_ip: 192.168.0.95
     labels:
-      probe_name: dns1
+      probe_name: remote_probe
 
 processes: []
 
@@ -17,8 +17,6 @@ outputs:
 - output_name: remote_sender
   match_labels:
     probe_name:
-    - dns1
-    name:
-    - remote_foo
+    - remote_probe
   config:
     address: 127.0.0.1
