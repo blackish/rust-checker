@@ -1,5 +1,5 @@
 use argparse::{ArgumentParser, StoreTrue, Store};
-use yaml_rust::{YamlLoader, Yaml};
+use yaml_rust::{YamlLoader, Yaml, yaml};
 use std::fs;
 use std::process;
 use rand::random;
@@ -20,7 +20,7 @@ pub struct ProbeConfig {
     pub interval: i64,
     //pub mtu: i64,
     //pub source_ip: String,
-    pub config: HashMap<String, String>,
+    pub config: HashMap<String, yaml::Yaml>,
     pub labels: HashMap<String, String>
 }
 
@@ -33,7 +33,7 @@ pub struct ProcessConfig {
     pub values: Vec<String>,
     pub sender: Option<Sender<CheckResult>>,
     pub match_value: String,
-    pub config: HashMap<String, String>,
+    pub config: HashMap<String, yaml::Yaml>,
 }
 
 pub struct OutputConfig {
@@ -41,7 +41,7 @@ pub struct OutputConfig {
     pub output_name: String,
     pub match_labels: HashMap<String, Vec<String>>,
     pub sender: Option<Sender<CheckResult>>,
-    pub config: HashMap<String, String>
+    pub config: HashMap<String, yaml::Yaml>
 }
 
 pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>) {
@@ -99,7 +99,7 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                 match value["config"] {
                     yaml_rust::Yaml::Hash(ref l) => {
                         for (m_name, m_value) in l {
-                            host.config.insert(m_name.clone().into_string().unwrap(), m_value.clone().into_string().unwrap());
+                            host.config.insert(m_name.clone().into_string().unwrap(), m_value.clone());
                         }
                     },
                     _ => {}
@@ -175,7 +175,7 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                     yaml_rust::Yaml::Hash(ref l) => {
                         for (m_name, m_value) in l {
                             println!("{:?} {:?}", m_name, m_value);
-                            process.config.insert(m_name.clone().into_string().unwrap(), m_value.clone().into_string().unwrap());
+                            process.config.insert(m_name.clone().into_string().unwrap(), m_value.clone());
                         }
                     },
                     _ => {}
@@ -219,7 +219,7 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                 match value["config"] {
                     yaml_rust::Yaml::Hash(ref l) => {
                         for (m_name, m_value) in l {
-                            output.config.insert(m_name.clone().into_string().unwrap(), m_value.clone().into_string().unwrap());
+                            output.config.insert(m_name.clone().into_string().unwrap(), m_value.clone());
                         }
                     },
                     _ => {}

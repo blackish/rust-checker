@@ -22,7 +22,7 @@ impl RemoteOutput {
     pub fn new(config: &OutputConfig) -> Self {
         //let (tx, rx) = channel();
         let (tx, rx) = mpsc::channel(65535);
-        let address = config.config.get("address").unwrap().to_string();
+        let address = config.config.get("address").unwrap().clone().into_string().unwrap();
         thread::spawn(move || { stream_probe(address, rx)});
         let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -42,7 +42,7 @@ async fn stream_probe(address: String, mut rx: mpsc::Receiver<ProbeRequest>) {
     };
     let request = Request::new(probe_stream);
     match client.get_probe(request).await {
-        Ok(response) => {},
+        Ok(_) => {},
         Err(_) => println!("Error")
     }
 }

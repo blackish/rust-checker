@@ -40,9 +40,9 @@ impl SynChecker {
             name: config.labels.get(&String::from("name")).clone().unwrap().to_string(),
             host: config.host.clone(),
             interval: config.interval.clone(),
-            source_ip: config.config.get("source_ip").unwrap().to_string(),
+            source_ip: config.config.get("source_ip").unwrap().clone().into_string().unwrap(),
             probes: Mutex::new(Vec::<Probe>::new()),
-            port: config.config.get("port").unwrap().parse().unwrap(),
+            port: config.config.get("port").unwrap().clone().into_i64().unwrap() as u16,
             labels: config.labels.clone()
         }
     }

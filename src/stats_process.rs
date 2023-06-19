@@ -1,3 +1,4 @@
+use yaml_rust::yaml;
 use std::collections::HashMap;
 use crate::checker::CheckResult;
 use crate::process::Processes;
@@ -22,13 +23,13 @@ pub struct Stats {
 }
 
 impl Stats {
-    pub fn new(stats: Vec<String>, metric_name: String, keep_name: bool, labels_to_add: HashMap<String, String>, config: HashMap<String, String>, id: u16) -> Self {
+    pub fn new(stats: Vec<String>, metric_name: String, keep_name: bool, labels_to_add: HashMap<String, String>, config: HashMap<String, yaml::Yaml>, id: u16) -> Self {
         Self {
             keep_name: keep_name,
             stats_to_emit: stats,
             stats: HashMap::new(),
             to_process: metric_name,
-            interval: config.get("interval").unwrap().parse().unwrap(),
+            interval: config.get("interval").unwrap().clone().into_i64().unwrap() as i32,
             to_emit: Vec::new(),
             id: id,
             labels_to_add: labels_to_add

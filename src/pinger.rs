@@ -39,9 +39,9 @@ impl IcmpChecker {
         Self{
             name: config.name.clone(),
             host: config.host.clone(),
-            mtu: config.config.get("mtu").unwrap().parse().unwrap(),
+            mtu: config.config.get("mtu").unwrap().clone().into_i64().unwrap(),
             interval: config.interval.clone(),
-            source_ip: config.config.get("source_ip").unwrap().to_string(),
+            source_ip: config.config.get("source_ip").unwrap().clone().into_string().unwrap(),
             probes: Mutex::new(Vec::<Probe>::new()),
             labels: config.labels.clone()
         }
