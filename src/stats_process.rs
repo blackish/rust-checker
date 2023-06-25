@@ -12,7 +12,7 @@ enum EmitStats {
     Number(i32)
 }
 
-pub struct Stats {
+pub struct StatsCount {
     keep_name: bool,
     stats_to_emit: Vec<String>,
     stats: HashMap<String, Vec<EmitStats>>,
@@ -24,7 +24,7 @@ pub struct Stats {
     receiver: Receiver<CheckResult>
 }
 
-impl Stats {
+impl StatsCount {
     pub fn new(config: &ProcessConfig, sender: Sender<CheckResult>, receiver: Receiver<CheckResult>) -> Self {
         Self {
             keep_name: config.keep_name.clone(),
@@ -40,7 +40,7 @@ impl Stats {
     }
 }
 
-impl Processes for Stats {
+impl Processes for StatsCount {
     fn process_probe(&mut self) {
         loop {
             let probe = self.receiver.recv().unwrap();

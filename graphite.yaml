@@ -12,9 +12,9 @@ hosts:
       probe_name: dns1
 
 processes:
-- process_name: stats
+- process_name: stats_time
   config:
-    interval: 5
+    interval: 15
   labels_to_add:
     stats: rtt
   match_labels:

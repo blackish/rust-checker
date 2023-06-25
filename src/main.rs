@@ -6,6 +6,7 @@ pub mod output;
 pub mod output_print;
 pub mod selector;
 pub mod stats_process;
+pub mod stats_time_process;
 pub mod pinger;
 pub mod syn_pinger;
 pub mod remote_pinger;
@@ -17,7 +18,8 @@ use crate::remote_pinger::run_server;
 use crate::pinger::{IcmpChecker, icmp_sender, icmp_receiver};
 use crate::syn_pinger::{SynChecker, syn_sender, syn_receiver};
 use crate::selector::selector_worker;
-use crate::stats_process::Stats;
+use crate::stats_process::StatsCount;
+use crate::stats_time_process::StatsTime;
 use crate::process::Processes;
 use crate::output::output_worker;
 use crate::output_print::PrintOutput;
@@ -33,11 +35,19 @@ fn main() {
     let (selector_tx, selector_rx) = mpsc::channel();
     let mut processes = Vec::new();
     for mut p in cfg.1 {
-        if p.process_name == "stats" {
+        if p.process_name == "stats_count" {
             let (process_tx, process_rx) = mpsc::channel();
             p.sender = Some(process_tx);
             let to_selector = selector_tx.clone();
-            let mut processor = Stats::new(&p, to_selector, process_rx);
+            let mut processor = StatsCount::new(&p, to_selector, process_rx);
+            let rcv = thread::spawn(move || { processor.process_probe() });
+            pinger_handles.push(rcv);
+            processes.push(p);
+        } else if p.process_name == "stats_time" {
+            let (process_tx, process_rx) = mpsc::channel();
+            p.sender = Some(process_tx);
+            let to_selector = selector_tx.clone();
+            let mut processor = StatsTime::new(&p, to_selector, process_rx);
             let rcv = thread::spawn(move || { processor.process_probe() });
             pinger_handles.push(rcv);
             processes.push(p);
