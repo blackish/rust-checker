@@ -123,14 +123,14 @@ impl Outputs for GraphiteOutput {
             }
             received += &(format!(" {} {} {}\n", key, value, SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs().to_string()));
             println!("{:?}", received);
-            //self.buffer.push(received);
+            self.buffer.push(received);
         }
-        //let to_send: Vec<String> = self.buffer.drain(..).collect();
-        //for probe_to_send in to_send {
-            //match self.socket.write_all(probe_to_send.as_bytes()) {
-                //Ok(()) => {},
-                //Err(_) => {self.buffer.push(probe_to_send);}
-            //}
-        //}
+        let to_send: Vec<String> = self.buffer.drain(..).collect();
+        for probe_to_send in to_send {
+            match self.socket.write_all(probe_to_send.as_bytes()) {
+                Ok(()) => {},
+                Err(_) => {self.buffer.push(probe_to_send);}
+            }
+        }
     }
 }
