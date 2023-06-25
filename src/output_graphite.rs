@@ -2,6 +2,8 @@ use crate::checker::CheckResult;
 use crate::output::Outputs;
 use crate::config::OutputConfig;
 use std::net::TcpStream;
+use std::io;
+use std::io::Write;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::time::{Duration, Instant};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -12,13 +14,13 @@ const MAX_RECONNECT_DELAY_MS: u64 = 10_000;
 
 pub struct GraphiteOutput {
     prefix: String,
-    name: String,
+    names: Vec<String>,
     buffer: Vec<String>,
     socket: RetrySocket
 }
 
 struct RetrySocket {
-    socket: Option(TcpStream),
+    socket: Option<TcpStream>,
     address: Vec<SocketAddr>,
     next_try: Instant,
     retries: usize
@@ -27,7 +29,7 @@ struct RetrySocket {
 impl RetrySocket {
     fn new<A: ToSocketAddrs>(addresses: A) -> io::Result<Self> {
         let sockaddrs = addresses.to_socket_addrs()?.collect();
-        sock = Self {
+        let mut sock = Self {
             address: sockaddrs,
             retries: 0,
             next_try: Instant::now(),
@@ -42,11 +44,11 @@ impl RetrySocket {
             if now < self.next_try {
                 sleep(self.next_try - now);
             }
-            let addresses: &[SocketAddr] = self.addresses.as_ref();
+            let addresses: &[SocketAddr] = self.address.as_ref();
             let conn = TcpStream::connect(addresses);
             match conn {
                 Ok(socket) => {
-                    self.socket = socket;
+                    self.socket = Some(socket);
                     Ok(())
                 }
                 Err(e) => {
@@ -57,8 +59,9 @@ impl RetrySocket {
                     Err(e)
                 }
             }
+        } else {
+            Ok(())
         }
-        Ok(())
     }
 
     fn with_socket<F, T>(&mut self, operation: F) -> io::Result<T>
@@ -73,19 +76,13 @@ impl RetrySocket {
             operation(socket)
         } else {
             Err(io::Error::from(io::ErrorKind::NotConnected))
-        };
-    }
-    fn flush(&mut self) -> Result<> {
-        self.with_socket(TcpStream::flush)
-    }
-    fn write(&mut self, &mut buf [u8]) -> Result<usize> {
-        self.with_socket(|sock| sock.write(buf))
+        }
     }
 }
 
-impl Write for RetrySocket {
+impl io::Write for RetrySocket {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.with_socket(|sock| sock.write(buf))
+        self.with_socket(|sock: &mut TcpStream| sock.write(buf))
     }
 
     fn flush(&mut self) -> io::Result<()> {
@@ -96,30 +93,44 @@ impl Write for RetrySocket {
 
 impl GraphiteOutput {
     pub fn new(config: &OutputConfig) -> Self {
-        Self{
-            socket: RetrySocket::new(config.config.get("address").unwrap().to_string()).unwrap(),
-            buffer: Vec::new(),
-            prefix: config.config.get("prefix").unwrap().to_string()
+        let mut res = Self{
+                        socket: RetrySocket::new(config.config.get("address").unwrap().clone().into_string().unwrap()).unwrap(),
+                        buffer: Vec::new(),
+                        names: Vec::new(),
+                        prefix: config.config.get("prefix").unwrap().clone().into_string().unwrap()
+                    };
+        match config.config.get("names").unwrap() {
+            yaml_rust::Yaml::Array(ref s) => {
+                for n in s {
+                    res.names.push(n.clone().into_string().unwrap());
+                }
+            },
+            _ => {}
         }
+        return res;
     }
 }
 
 impl Outputs for GraphiteOutput {
     fn process_probe(&mut self, probe: CheckResult) {
         for (key, value) in probe.values {
-            let mut received = self.prefix.clone();
-            if self.name != "" && let Some(name) == probe.labels.get(self.name) {
-                received += name + "_"
+            let mut received = String::new();
+            received += &self.prefix.clone().to_string();
+            for l_name in self.names.clone() {
+                if let Some(name) = probe.labels.get(&l_name) {
+                    received += &(String::from(".") + &name);
+                }
             }
-            received += format!("{} {} {}\n", key, value, SystemTime.now().duration_since(UNIX_EPOCH).unwrap().as_secs().to_string());
-            self.buf.push(received);
+            received += &(format!(" {} {} {}\n", key, value, SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs().to_string()));
+            println!("{:?}", received);
+            //self.buffer.push(received);
         }
-        let to_send = self.buf.drain().collect();
-        for probe in to_send {
-            match self.sock.write_all(probe.as_byte()) {
-                Ok(()) => {},
-                Err(_) => {self.buf.push(probe);}
-            }
-        }
+        //let to_send: Vec<String> = self.buffer.drain(..).collect();
+        //for probe_to_send in to_send {
+            //match self.socket.write_all(probe_to_send.as_bytes()) {
+                //Ok(()) => {},
+                //Err(_) => {self.buffer.push(probe_to_send);}
+            //}
+        //}
     }
 }

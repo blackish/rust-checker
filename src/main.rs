@@ -10,17 +10,19 @@ pub mod pinger;
 pub mod syn_pinger;
 pub mod remote_pinger;
 pub mod output_sender;
+pub mod output_graphite;
 
 use crate::config::load_config;
 use crate::remote_pinger::run_server;
 use crate::pinger::{IcmpChecker, icmp_sender, icmp_receiver};
 use crate::syn_pinger::{SynChecker, syn_sender, syn_receiver};
-use crate::process::process_worker;
 use crate::selector::selector_worker;
 use crate::stats_process::Stats;
+use crate::process::Processes;
 use crate::output::output_worker;
 use crate::output_print::PrintOutput;
 use crate::output_sender::RemoteOutput;
+use crate::output_graphite::GraphiteOutput;
 
 use std::sync::{mpsc, Arc};
 use std::thread;
@@ -33,10 +35,10 @@ fn main() {
     for mut p in cfg.1 {
         if p.process_name == "stats" {
             let (process_tx, process_rx) = mpsc::channel();
-            let processor = Stats::new(p.values.clone(), p.match_value.clone(), p.keep_name.clone(), p.labels_to_add.clone(), p.config.clone(), p.id.clone());
-            let to_selector = selector_tx.clone();
-            let rcv = thread::spawn(move || { process_worker(processor, to_selector, process_rx) });
             p.sender = Some(process_tx);
+            let to_selector = selector_tx.clone();
+            let mut processor = Stats::new(&p, to_selector, process_rx);
+            let rcv = thread::spawn(move || { processor.process_probe() });
             pinger_handles.push(rcv);
             processes.push(p);
         }
@@ -52,6 +54,13 @@ fn main() {
             outputs.push(o);
         } else if o.output_name == "remote_sender" {
             let output = RemoteOutput::new(&o);
+            let (output_tx, output_rx) = mpsc::channel();
+            let rcv = thread::spawn(move || { output_worker(output, output_rx) });
+            pinger_handles.push(rcv);
+            o.sender = Some(output_tx);
+            outputs.push(o);
+        } else if o.output_name == "graphite" {
+            let output = GraphiteOutput::new(&o);
             let (output_tx, output_rx) = mpsc::channel();
             let rcv = thread::spawn(move || { output_worker(output, output_rx) });
             pinger_handles.push(rcv);

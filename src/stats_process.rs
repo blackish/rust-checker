@@ -1,7 +1,8 @@
-use yaml_rust::yaml;
 use std::collections::HashMap;
+use std::sync::mpsc::{Sender, Receiver};
 use crate::checker::CheckResult;
 use crate::process::Processes;
+use crate::config::ProcessConfig;
 
 enum EmitStats {
     Avg(f32),
@@ -19,96 +20,97 @@ pub struct Stats {
     interval: i32,
     labels_to_add: HashMap<String, String>,
     id: u16,
-    to_emit: Vec<CheckResult>
+    sender: Sender<CheckResult>,
+    receiver: Receiver<CheckResult>
 }
 
 impl Stats {
-    pub fn new(stats: Vec<String>, metric_name: String, keep_name: bool, labels_to_add: HashMap<String, String>, config: HashMap<String, yaml::Yaml>, id: u16) -> Self {
+    pub fn new(config: &ProcessConfig, sender: Sender<CheckResult>, receiver: Receiver<CheckResult>) -> Self {
         Self {
-            keep_name: keep_name,
-            stats_to_emit: stats,
+            keep_name: config.keep_name.clone(),
+            stats_to_emit: config.values.clone(),
             stats: HashMap::new(),
-            to_process: metric_name,
-            interval: config.get("interval").unwrap().clone().into_i64().unwrap() as i32,
-            to_emit: Vec::new(),
-            id: id,
-            labels_to_add: labels_to_add
+            to_process: config.match_value.clone(),
+            interval: config.config.get("interval").unwrap().clone().into_i64().unwrap() as i32,
+            id: config.id.clone(),
+            labels_to_add: config.labels_to_add.clone(),
+            sender: sender,
+            receiver: receiver
         }
     }
 }
 
 impl Processes for Stats {
-    fn get_to_emit(&mut self) -> Vec<CheckResult> {
-        return self.to_emit.drain(..).collect();
-    }
-
-    fn process_probe(&mut self, probe: CheckResult) {
-        let mut processed_probes = 1;
-        let mut new_result = Vec::new();
-        for s in &self.stats_to_emit {
-            if s == "avg" {
-                new_result.push(EmitStats::Avg(probe.values.get(&self.to_process).unwrap().clone()));
-            } else if s == "low" {
-                new_result.push(EmitStats::Low(probe.values.get(&self.to_process).unwrap().clone()));
-            } else if s == "high" {
-                new_result.push(EmitStats::High(probe.values.get(&self.to_process).unwrap().clone()));
-            } else if s == "sum" {
-                new_result.push(EmitStats::Sum(probe.values.get(&self.to_process).unwrap().clone()));
+    fn process_probe(&mut self) {
+        loop {
+            let probe = self.receiver.recv().unwrap();
+            let mut processed_probes = 1;
+            let mut new_result = Vec::new();
+            for s in &self.stats_to_emit {
+                if s == "avg" {
+                    new_result.push(EmitStats::Avg(probe.values.get(&self.to_process).unwrap().clone()));
+                } else if s == "low" {
+                    new_result.push(EmitStats::Low(probe.values.get(&self.to_process).unwrap().clone()));
+                } else if s == "high" {
+                    new_result.push(EmitStats::High(probe.values.get(&self.to_process).unwrap().clone()));
+                } else if s == "sum" {
+                    new_result.push(EmitStats::Sum(probe.values.get(&self.to_process).unwrap().clone()));
+                }
             }
-        }
-        new_result.push(EmitStats::Number(1));
+            new_result.push(EmitStats::Number(1));
 
-        let to_process = probe.values.get(&self.to_process).unwrap().clone();
-        self.stats.entry(probe.name.clone()).and_modify(|e| {
-            for atomic_stat in e {
-                match atomic_stat {
-                    EmitStats::Sum(s) => {
-                        *s += to_process;
-                    },
-                    EmitStats::Avg(s) => {
-                        *s += to_process;
-                    },
-                    EmitStats::Low(s) => {
-                        if *s > to_process {
-                            *s = to_process.clone();
+            let to_process = probe.values.get(&self.to_process).unwrap().clone();
+            self.stats.entry(probe.name.clone()).and_modify(|e| {
+                for atomic_stat in e {
+                    match atomic_stat {
+                        EmitStats::Sum(s) => {
+                            *s += to_process;
+                        },
+                        EmitStats::Avg(s) => {
+                            *s += to_process;
+                        },
+                        EmitStats::Low(s) => {
+                            if *s > to_process {
+                                *s = to_process.clone();
+                            }
+                        },
+                        EmitStats::High(s) => {
+                            if *s < to_process {
+                                *s = to_process.clone();
+                            }
+                        },
+                        EmitStats::Number(s) => {
+                            *s += 1;
+                            processed_probes = s.clone();
                         }
-                    },
-                    EmitStats::High(s) => {
-                        if *s < to_process {
-                            *s = to_process.clone();
-                        }
-                    },
-                    EmitStats::Number(s) => {
-                        *s += 1;
-                        processed_probes = s.clone();
                     }
                 }
-            }
-        }).or_insert(new_result);
-        if processed_probes >= self.interval {
-            let entry = self.stats.remove(&probe.name).unwrap();
-            let mut check_to_emit = CheckResult{
-                    name: probe.name,
-                    values: HashMap::new(),
-                    processes: probe.processes,
-                    labels: probe.labels};
-            check_to_emit.labels.extend(self.labels_to_add.clone());
-            check_to_emit.processes.push(self.id.clone());
-            for atomic_stat in entry {
-                match atomic_stat {
-                    EmitStats::Avg(s) => {
-                        _ = check_to_emit.values.insert(String::from("avg"), s / processed_probes as f32);
-                    },
-                    EmitStats::Low(s) => _ = check_to_emit.values.insert(String::from("low"), s),
-                    EmitStats::High(s) => _ = check_to_emit.values.insert(String::from("high"), s),
-                    EmitStats::Sum(s) => _ = check_to_emit.values.insert(String::from("sum"), s),
-                    _ => {}
+            }).or_insert(new_result);
+            if processed_probes >= self.interval {
+                let entry = self.stats.remove(&probe.name).unwrap();
+                let mut check_to_emit = CheckResult{
+                        name: probe.name,
+                        values: HashMap::new(),
+                        processes: probe.processes,
+                        labels: probe.labels};
+                check_to_emit.labels.extend(self.labels_to_add.clone());
+                check_to_emit.processes.push(self.id.clone());
+                for atomic_stat in entry {
+                    match atomic_stat {
+                        EmitStats::Avg(s) => {
+                            _ = check_to_emit.values.insert(String::from("avg"), s / processed_probes as f32);
+                        },
+                        EmitStats::Low(s) => _ = check_to_emit.values.insert(String::from("low"), s),
+                        EmitStats::High(s) => _ = check_to_emit.values.insert(String::from("high"), s),
+                        EmitStats::Sum(s) => _ = check_to_emit.values.insert(String::from("sum"), s),
+                        _ => {}
+                    }
                 }
+                if self.keep_name {
+                    check_to_emit.labels.insert(String::from("value"), self.to_process.clone());
+                }
+                self.sender.send(check_to_emit).unwrap();
             }
-            if self.keep_name {
-                check_to_emit.labels.insert(String::from("value"), self.to_process.clone());
-            }
-            self.to_emit.push(check_to_emit);
         }
     }
 }

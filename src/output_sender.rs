@@ -20,7 +20,6 @@ pub struct RemoteOutput {
 
 impl RemoteOutput {
     pub fn new(config: &OutputConfig) -> Self {
-        //let (tx, rx) = channel();
         let (tx, rx) = mpsc::channel(65535);
         let address = config.config.get("address").unwrap().clone().into_string().unwrap();
         thread::spawn(move || { stream_probe(address, rx)});

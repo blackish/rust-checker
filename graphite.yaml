@@ -1,0 +1,46 @@
+---
+
+hosts:
+  foo1:
+    addr: 8.8.8.8
+    check: icmp
+    interval: 3
+    config:
+      mtu: 100
+      source_ip: 192.168.0.95
+    labels:
+      probe_name: dns1
+
+processes:
+- process_name: stats
+  config:
+    interval: 5
+  labels_to_add:
+    stats: rtt
+  match_labels:
+    probe_name:
+    - dns1
+    - dns2
+    - remote_probe
+  match_value: rtt
+  values:
+  - avg
+  - low
+  - high
+
+outputs:
+- output_name: graphite
+  match_labels:
+    probe_name:
+    - dns1
+    - dns2
+    - remote_probe
+    stats:
+    - stats1
+    - loss
+    - rtt
+  config:
+    address: localhost:2003
+    prefix: local
+    names:
+    - probe_name
