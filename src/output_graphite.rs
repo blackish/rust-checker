@@ -121,8 +121,7 @@ impl Outputs for GraphiteOutput {
                     received += &(String::from(".") + &name);
                 }
             }
-            received += &(format!(" {} {} {}\n", key, value, SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs().to_string()));
-            println!("{:?}", received);
+            received += &(format!(".{} {} {}\n", key, value, SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs().to_string()));
             self.buffer.push(received);
         }
         let to_send: Vec<String> = self.buffer.drain(..).collect();
