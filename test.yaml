@@ -6,50 +6,27 @@ hosts:
     check: icmp
     interval: 3
     config:
-      mtu: "100"
+      mtu: 100
       source_ip: 192.168.0.95
     labels:
       probe_name: dns1
 
 processes:
-- process_name: stats
+- process_name: histogram
   config:
-    interval: "5"
+    interval: 10
   labels_to_add:
     stats: rtt
   match_labels:
     probe_name:
     - dns1
-    - dns2
-    - remote_probe
   match_value: rtt
-  values:
-  - avg
-  - low
-  - high
-- process_name: stats
-  config:
-    interval: "5"
-  labels_to_add:
-    stats: loss
-  match_labels:
-    probe_name:
-    - dns1
-    - dns2
-    - remote_probe
-  match_value: loss
-  values:
-  - sum
 
 outputs:
 - output_name: print
   match_labels:
     probe_name:
     - dns1
-    - dns2
-    - remote_probe
     stats:
-    - stats1
-    - loss
     - rtt
   config: {}
