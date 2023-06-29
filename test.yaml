@@ -21,6 +21,17 @@ processes:
     probe_name:
     - dns1
   match_value: rtt
+- process_name: stats_time
+  config:
+    interval: 10
+  labels_to_add:
+    stats: loss
+  match_labels:
+    probe_name:
+    - dns1
+  match_value: loss
+  values:
+  - sum
 
 outputs:
 - output_name: print
@@ -29,4 +40,5 @@ outputs:
     - dns1
     stats:
     - rtt
+    - loss
   config: {}
