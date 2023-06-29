@@ -37,7 +37,7 @@ struct Probe {
 impl SynChecker {
     pub fn new(config: &ProbeConfig) -> Self {
         Self{
-            name: config.labels.get(&String::from("name")).clone().unwrap().to_string(),
+            name: config.name.clone(),
             host: config.host.clone(),
             interval: config.interval.clone(),
             source_ip: config.config.get("source_ip").unwrap().clone().into_string().unwrap(),
@@ -131,6 +131,7 @@ pub fn syn_receiver(checker: &Arc<SynChecker>, sender: Sender<CheckResult>) {
         match iter.next_with_timeout(timeout) {
             Ok(result) => match result {
                 Some((packet, raddr)) => {
+                    println!("{:?}", packet);
                     if raddr == addr && packet.get_source() == checker.port && packet.get_destination() == 6535 {
                         let now = Instant::now();
                         let mut probes = checker.probes.lock().unwrap();

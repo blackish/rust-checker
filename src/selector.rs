@@ -5,6 +5,7 @@ use crate::config::OutputConfig;
 
 pub fn selector_worker(receiver: Receiver<CheckResult>, processes: Vec<ProcessConfig>, outputs: Vec<OutputConfig>) {
     for probe in receiver {
+        println!("labels: {:?} values: {:?}", probe.labels, probe.values);
         let mut gone_for_processing = false;
         let (mut to_send, _) = channel();
         'processes: for p in &processes {

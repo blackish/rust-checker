@@ -7,12 +7,12 @@ hosts:
     interval: 3
     config:
       mtu: 100
-      source_ip: 10.32.7.131
+      source_ip: 192.168.0.136
     labels:
       probe_name: dns1
 
 processes:
-- process_name: stats_time
+- process_name: histogram
   config:
     interval: 60
   labels_to_add:
@@ -20,12 +20,7 @@ processes:
   match_labels:
     probe_name:
     - dns1
-    - remote_probe
   match_value: rtt
-  values:
-  - avg
-  - low
-  - high
 - process_name: stats_time
   config:
     interval: 60
