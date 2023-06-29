@@ -131,7 +131,6 @@ pub fn syn_receiver(checker: &Arc<SynChecker>, sender: Sender<CheckResult>) {
         match iter.next_with_timeout(timeout) {
             Ok(result) => match result {
                 Some((packet, raddr)) => {
-                    println!("{:?}", packet);
                     if raddr == addr && packet.get_source() == checker.port && packet.get_destination() == 6535 {
                         let now = Instant::now();
                         let mut probes = checker.probes.lock().unwrap();
