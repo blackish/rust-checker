@@ -3,23 +3,30 @@
 hosts:
   foo1:
     addr: 8.8.8.8
-    check: icmp
+    check: mtu_icmp
     interval: 3
     config:
-      mtu: 100
+      mtu:
+      - 100
+      - 500
+      - 1000
+      - 1460
+      interval: 3
       source_ip: 192.168.0.95
     labels:
-      probe_name: dns1
+      probe_name: dnsA
 
 processes:
 - process_name: histogram
   config:
-    interval: 10
+    interval: 60
   labels_to_add:
     stats: rtt
   match_labels:
     probe_name:
-    - dns[0-9]$
+    - dnsA
+    mtu:
+    - "100"
   match_value: rtt
 
 outputs:
@@ -30,4 +37,6 @@ outputs:
     stats:
     - rtt
     - loss
+    mtu:
+    - "[0-9]+"
   config: {}

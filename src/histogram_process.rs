@@ -48,7 +48,6 @@ impl Histogram {
     pub fn new(config: &ProcessConfig, sender: Sender<CheckResult>, receiver: Receiver<CheckResult>) -> Self {
         let result = Self {
             keep_name: config.keep_name.clone(),
-            //stats_to_emit: Vec::new(),
             stats: Arc::new(Mutex::new(HashMap::new())),
             probes: Arc::new(Mutex::new(HashMap::new())),
             to_process: config.match_value.clone(),
@@ -57,14 +56,6 @@ impl Histogram {
             labels_to_add: config.labels_to_add.clone(),
             receiver: receiver
         };
-        //match config.config.get("values") {
-            //yaml_rust::Yaml::Array(ref h) => {
-                //for v in h {
-                    //result.stats_to_emit.push(v.clone().into_f64().unwrap());
-                //}
-            //},
-            //_ => {}
-        //}
         let stats = Arc::clone(&result.stats);
         let probes = Arc::clone(&result.probes);
         let interval = result.interval.clone();

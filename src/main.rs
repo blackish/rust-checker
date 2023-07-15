@@ -13,10 +13,12 @@ pub mod syn_pinger;
 pub mod remote_pinger;
 pub mod output_sender;
 pub mod output_graphite;
+pub mod mtu_pinger;
 
 use crate::config::load_config;
 use crate::remote_pinger::run_server;
 use crate::pinger::{IcmpChecker, icmp_sender, icmp_receiver};
+use crate::mtu_pinger::{IcmpMtuChecker, icmp_mtu_sender, icmp_mtu_receiver};
 use crate::syn_pinger::{SynChecker, syn_sender, syn_receiver};
 use crate::selector::selector_worker;
 use crate::stats_process::StatsCount;
@@ -100,6 +102,15 @@ fn main() {
             pinger_handles.push(rcv);
             let sender = Arc::clone(&checker);
             let rcv = thread::spawn(move || {icmp_sender(&sender)});
+            pinger_handles.push(rcv);
+        } else if c.check_type == "mtu_icmp" {
+            let checker = Arc::new(IcmpMtuChecker::new(&c));
+            let sender = Arc::clone(&checker);
+            let sender_tx = selector_tx.clone();
+            let rcv = thread::spawn(move || {icmp_mtu_receiver(&sender, sender_tx)});
+            pinger_handles.push(rcv);
+            let sender = Arc::clone(&checker);
+            let rcv = thread::spawn(move || {icmp_mtu_sender(&sender)});
             pinger_handles.push(rcv);
         } else if c.check_type == "syn" {
             let checker = Arc::new(SynChecker::new(&c));
