@@ -27,7 +27,7 @@ fn emit_probes(interval: i32, stats: Arc<Mutex<HashMap<String, Vec<f32>>>>, prob
         let mut to_emit_stats = stats.lock().unwrap();
         let to_emit_probes = probes.lock().unwrap();
         let mut n_probe: i32 = 0;
-        for (key, mut value) in to_emit_stats.drain() {
+        for (key, value) in to_emit_stats.drain() {
             let probe_to_copy = to_emit_probes.get(&key).unwrap().clone();
             let mut new_probe = CheckResult {
                 name: probe_to_copy.name.clone(),
@@ -77,8 +77,7 @@ impl Processes for Histogram {
     fn process_probe(&mut self) {
         loop {
             let probe = self.receiver.recv().unwrap();
-            let mut processed_probes = 1;
-            let mut new_result = Vec::new();
+            let new_result = Vec::new();
             let mut new_probe_to_emit = self.probes.lock().unwrap();
             if !new_probe_to_emit.contains_key(&probe.name) {
                     let mut new_probe = CheckResult {

@@ -1,3 +1,4 @@
+use regex::Regex;
 use std::sync::mpsc::{Receiver, channel};
 use crate::checker::CheckResult;
 use crate::config::ProcessConfig;
@@ -5,19 +6,22 @@ use crate::config::OutputConfig;
 
 pub fn selector_worker(receiver: Receiver<CheckResult>, processes: Vec<ProcessConfig>, outputs: Vec<OutputConfig>) {
     for probe in receiver {
-        println!("labels: {:?} values: {:?}", probe.labels, probe.values);
         let mut gone_for_processing = false;
         let (mut to_send, _) = channel();
         'processes: for p in &processes {
             if probe.processes.contains(&p.id) {
                 continue 'processes;
             }
-            for (key, value) in probe.labels.clone() {
+            'probes: for (key, value) in probe.labels.clone() {
                 match p.match_labels.get(&key) {
                     Some(v) => {
-                        if !v.contains(&value) {
-                            continue 'processes;
+                        for regex_value in v {
+                            let match_regex = Regex::new(regex_value).unwrap();
+                            if match_regex.is_match(&value) {
+                                continue 'probes;
+                            }
                         }
+                        continue 'processes;
                     },
                     None => {
                         continue 'processes;
@@ -38,21 +42,25 @@ pub fn selector_worker(receiver: Receiver<CheckResult>, processes: Vec<ProcessCo
             to_send.send(probe).unwrap();
         } else {
             'outputs: for o in &outputs {
-                for (key, value) in probe.labels.clone() {
+                'outputprobes: for (key, value) in probe.labels.clone() {
                     match o.match_labels.get(&key) {
                         Some(v) => {
-                            if !v.contains(&value) {
-                                continue 'outputs;
+                            for regex_value in v {
+                                let match_regex = Regex::new(regex_value).unwrap();
+                                if match_regex.is_match(&value) {
+                                    continue 'outputprobes;
+                                }
                             }
+                            continue 'outputs;
                         },
                         None => {
                             continue 'outputs;
                         }
                     }
-                    to_send = o.sender.as_ref().unwrap().clone();
-                    to_send.send(probe).unwrap();
-                    break 'outputs;
                 }
+                to_send = o.sender.as_ref().unwrap().clone();
+                to_send.send(probe).unwrap();
+                break 'outputs;
             }
         }
     }
