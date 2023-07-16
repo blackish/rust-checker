@@ -16,6 +16,7 @@ pub mod output_sender;
 pub mod output_graphite;
 pub mod mtu_pinger;
 
+use log::info;
 use crate::config::load_config;
 use crate::remote_pinger::run_server;
 use crate::pinger::{IcmpChecker, icmp_sender, icmp_receiver};
@@ -36,12 +37,15 @@ use std::sync::{mpsc, Arc};
 use std::thread;
 
 fn main() {
+    env_logger::init();
     let cfg = load_config();
     let mut pinger_handles = Vec::<thread::JoinHandle<()>>::new();
     let (selector_tx, selector_rx) = mpsc::channel();
     let mut processes = Vec::new();
+    info!("Starting processes...");
     for mut p in cfg.1 {
         if p.process_name == "stats_count" {
+            info!("Starting stats_count");
             let (process_tx, process_rx) = mpsc::channel();
             p.sender = Some(process_tx);
             let to_selector = selector_tx.clone();
@@ -50,6 +54,7 @@ fn main() {
             pinger_handles.push(rcv);
             processes.push(p);
         } else if p.process_name == "stats_time" {
+            info!("  Starting stats_time");
             let (process_tx, process_rx) = mpsc::channel();
             p.sender = Some(process_tx);
             let to_selector = selector_tx.clone();
@@ -58,6 +63,7 @@ fn main() {
             pinger_handles.push(rcv);
             processes.push(p);
         } else if p.process_name == "histogram" {
+            info!("  Starting histogram");
             let (process_tx, process_rx) = mpsc::channel();
             p.sender = Some(process_tx);
             let to_selector = selector_tx.clone();
@@ -68,8 +74,10 @@ fn main() {
         }
     }
     let mut outputs = Vec::new();
+    info!("Starting outputs");
     for mut o in cfg.2 {
         if o.output_name == "print" {
+            info!("  Starting print");
             let output = PrintOutput::new(o.id.clone());
             let (output_tx, output_rx) = mpsc::channel();
             let rcv = thread::spawn(move || { output_worker(output, output_rx) });
@@ -77,6 +85,7 @@ fn main() {
             o.sender = Some(output_tx);
             outputs.push(o);
         } else if o.output_name == "remote_sender" {
+            info!("  Starting remote_sender");
             let output = RemoteOutput::new(&o);
             let (output_tx, output_rx) = mpsc::channel();
             let rcv = thread::spawn(move || { output_worker(output, output_rx) });
@@ -84,6 +93,7 @@ fn main() {
             o.sender = Some(output_tx);
             outputs.push(o);
         } else if o.output_name == "graphite" {
+            info!("  Starting graphite");
             let output = GraphiteOutput::new(&o);
             let (output_tx, output_rx) = mpsc::channel();
             let rcv = thread::spawn(move || { output_worker(output, output_rx) });
@@ -95,8 +105,10 @@ fn main() {
     let rcv = thread::spawn(move || { selector_worker(selector_rx, processes, outputs) });
     pinger_handles.push(rcv);
     let hosts = cfg.0;
+    info!("Starting probes");
     for c in hosts {
         if c.check_type == "icmp" {
+            info!("  Starting icmp for {}", c.host);
             let checker = Arc::new(IcmpChecker::new(&c));
             let sender = Arc::clone(&checker);
             let sender_tx = selector_tx.clone();
@@ -106,6 +118,7 @@ fn main() {
             let rcv = thread::spawn(move || {icmp_sender(&sender)});
             pinger_handles.push(rcv);
         } else if c.check_type == "mtu_icmp" {
+            info!("  Starting mtu_icmp for {}", c.host);
             let checker = Arc::new(IcmpMtuChecker::new(&c));
             let sender = Arc::clone(&checker);
             let sender_tx = selector_tx.clone();
@@ -115,6 +128,7 @@ fn main() {
             let rcv = thread::spawn(move || {icmp_mtu_sender(&sender)});
             pinger_handles.push(rcv);
         } else if c.check_type == "syn" {
+            info!("  Starting syn for {}", c.host);
             let checker = Arc::new(SynChecker::new(&c));
             let sender = Arc::clone(&checker);
             let sender_tx = selector_tx.clone();
@@ -124,11 +138,13 @@ fn main() {
             let rcv = thread::spawn(move || {syn_sender(&sender)});
             pinger_handles.push(rcv);
         } else if c.check_type == "tcp_connect" {
+            info!("  Starting tcp_connect for {}", c.host);
             let checker = TcpConnectChecker::new(&c);
             let sender_tx = selector_tx.clone();
             let rcv = thread::spawn(move || {tcp_connect(checker, sender_tx)});
             pinger_handles.push(rcv);
         } else if c.check_type == "remote_listener" {
+            info!("  Starting remote_listener");
             let sender_tx = selector_tx.clone();
             let rcv = thread::spawn(move || { run_server(sender_tx) });
             pinger_handles.push(rcv);

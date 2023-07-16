@@ -1,3 +1,4 @@
+use log::error;
 use argparse::{ArgumentParser, StoreTrue, Store};
 use yaml_rust::{YamlLoader, Yaml, yaml};
 use std::fs;
@@ -18,8 +19,6 @@ pub struct ProbeConfig {
     pub host: String,
     pub check_type: String,
     pub interval: i64,
-    //pub mtu: i64,
-    //pub source_ip: String,
     pub config: HashMap<String, yaml::Yaml>,
     pub labels: HashMap<String, String>
 }
@@ -64,7 +63,7 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
     let text_config: String = match fs::read_to_string(cmd_opts.name) {
         Ok(config_file) => config_file,
         Err(err) => {
-            println!("Failed to load config: {}", err);
+            error!("Failed to load config: {}", err);
             process::exit(1);
         },
     };
@@ -87,14 +86,16 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                     config: HashMap::new(),
                     labels: HashMap::new()
                 };
-                //host.labels.insert(String::from("name"), key.clone().into_string().unwrap());
                 match value["labels"] {
                     yaml_rust::Yaml::Hash(ref l) => {
                         for (l_key, l_value) in l {
                             host.labels.insert(l_key.clone().into_string().unwrap(), l_value.clone().into_string().unwrap());
                         }
                     },
-                    _ => {}
+                    _ => {
+                        error!("Labels should be an array");
+                        process::exit(1);
+                        }
                 }
                 match value["config"] {
                     yaml_rust::Yaml::Hash(ref l) => {
@@ -102,7 +103,10 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                             host.config.insert(m_name.clone().into_string().unwrap(), m_value.clone());
                         }
                     },
-                    _ => {}
+                    _ => {
+                        error!("Config should be a HashMap");
+                        process::exit(1);
+                    }
                 }
                 probes.push(host);
             };
@@ -118,7 +122,10 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                     });
             }
         },
-        _ => {}
+        _ => {
+            error!("Probe should be an array");
+            process::exit(1);
+        }
     }
     let mut processes = Vec::<ProcessConfig>::new();
     match cfg[0]["processes"] {
@@ -148,12 +155,18 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                                         match_values.push(s_val.clone().into_string().unwrap());
                                     }
                                 },
-                                _ => {}
+                                _ => {
+                                    error!("match_label values should be an array");
+                                    process::exit(1);
+                                }
                             }
                             process.match_labels.insert(m_name.clone().into_string().unwrap(), match_values);
                         }
                     },
-                    _ => {}
+                    _ => {
+                        error!("match_label should be a hashmap");
+                        process::exit(1);
+                    }
                 }
                 match value["labels_to_add"] {
                     yaml_rust::Yaml::Hash(ref l) => {
@@ -161,7 +174,10 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                             process.labels_to_add.insert(m_name.clone().into_string().unwrap(), m_value.clone().into_string().unwrap());
                         }
                     },
-                    _ => {}
+                    _ => {
+                        error!("labels_to_add should be a hashmap");
+                        process::exit(1);
+                    }
                 }
                 match value["values"] {
                     yaml_rust::Yaml::Array(ref l) => {
@@ -169,7 +185,10 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                             process.values.push(v.clone().into_string().unwrap());
                         }
                     },
-                    _ => {}
+                    _ => {
+                        error!("match_label should be an hashmap");
+                        process::exit(1);
+                    }
                 }
                 match value["config"] {
                     yaml_rust::Yaml::Hash(ref l) => {
@@ -178,12 +197,18 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                             process.config.insert(m_name.clone().into_string().unwrap(), m_value.clone());
                         }
                     },
-                    _ => {}
+                    _ => {
+                        error!("config should be an hashmap");
+                        process::exit(1);
+                    }
                 }
                 processes.push(process);
             }
         },
-        _ => {}
+        _ => {
+            error!("probe should be an array");
+            process::exit(1);
+        }
     }
     let mut outputs = Vec::<OutputConfig>::new();
     match cfg[0]["outputs"] {
@@ -209,7 +234,10 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                                         match_values.push(s_val.clone().into_string().unwrap());
                                     }
                                 },
-                                _ => {}
+                                _ => {
+                                    error!("match_label should be an array or string");
+                                    process::exit(1);
+                                }
                             }
                             output.match_labels.insert(m_name.clone().into_string().unwrap(), match_values);
                         }
@@ -222,12 +250,18 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                             output.config.insert(m_name.clone().into_string().unwrap(), m_value.clone());
                         }
                     },
-                    _ => {}
+                    _ => {
+                        error!("config should be an hashmap");
+                        process::exit(1);
+                    }
                 }
                 outputs.push(output);
             }
         },
-        _ => {}
+        _ => {
+            error!("output should be an array");
+            process::exit(1);
+        }
     }
     return (probes, processes, outputs);
 }
