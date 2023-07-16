@@ -24,14 +24,14 @@ processes:
 - process_name: stats_time
   config:
     interval: 60
+    values:
+    - sum
   labels_to_add:
     stats: loss
   match_labels:
     probe_name:
     - dns1
   match_value: loss
-  values:
-  - sum
 
 outputs:
 - output_name: graphite

@@ -1,3 +1,5 @@
+use log::error;
+use std::process;
 use std::collections::HashMap;
 use crate::checker::CheckResult;
 use crate::process::Processes;
@@ -63,9 +65,9 @@ fn emit_probes(interval: i32, stats: Arc<Mutex<HashMap<String, Vec<EmitStats>>>>
 
 impl StatsTime {
     pub fn new(config: &ProcessConfig, sender: Sender<CheckResult>, receiver: Receiver<CheckResult>) -> Self {
-        let result = Self {
+        let mut result = Self {
             keep_name: config.keep_name.clone(),
-            stats_to_emit: config.values.clone(),
+            stats_to_emit: Vec::new(),
             stats: Arc::new(Mutex::new(HashMap::new())),
             probes: Arc::new(Mutex::new(HashMap::new())),
             to_process: config.match_value.clone(),
@@ -73,6 +75,17 @@ impl StatsTime {
             id: config.id.clone(),
             labels_to_add: config.labels_to_add.clone(),
             receiver: receiver
+        };
+        match config.config.get("values").unwrap() {
+            yaml_rust::Yaml::Array(ref l) => {
+                for v in l {
+                    result.stats_to_emit.push(v.clone().into_string().unwrap());
+                }
+            },
+            _ => {
+                error!("values should be an array");
+                process::exit(1);
+            }
         };
         let stats = Arc::clone(&result.stats);
         let probes = Arc::clone(&result.probes);

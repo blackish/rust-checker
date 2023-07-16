@@ -2,7 +2,7 @@
 
 hosts:
   foo1:
-    addr: 213.109.129.5:2223
+    addr: 213.108.129.5:2223
     check: tcp_connect
     interval: 3
     config:

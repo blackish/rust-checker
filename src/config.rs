@@ -1,4 +1,4 @@
-use log::error;
+use log::{error, debug};
 use argparse::{ArgumentParser, StoreTrue, Store};
 use yaml_rust::{YamlLoader, Yaml, yaml};
 use std::fs;
@@ -75,6 +75,7 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
         },
     };
     let mut probes = Vec::<ProbeConfig>::new();
+    debug!("Loading probes");
     match cfg[0]["hosts"] {
         yaml_rust::Yaml::Hash(ref h) => {
             for (key, value) in h {
@@ -86,6 +87,7 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                     config: HashMap::new(),
                     labels: HashMap::new()
                 };
+                debug!("Probe name: {}, host: {}", host.name, host.host);
                 match value["labels"] {
                     yaml_rust::Yaml::Hash(ref l) => {
                         for (l_key, l_value) in l {
@@ -128,6 +130,7 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
         }
     }
     let mut processes = Vec::<ProcessConfig>::new();
+    debug!("Loading processes");
     match cfg[0]["processes"] {
         yaml_rust::Yaml::Array(ref h) => {
             for value in h {
@@ -142,6 +145,7 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                     config: HashMap::new(),
                     match_labels: HashMap::new()
                 };
+                debug!("Process name: {}", process.process_name);
                 match value["match_labels"] {
                     yaml_rust::Yaml::Hash(ref l) => {
                         for (m_name, m_value) in l {
@@ -179,17 +183,6 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                         process::exit(1);
                     }
                 }
-                match value["values"] {
-                    yaml_rust::Yaml::Array(ref l) => {
-                        for v in l {
-                            process.values.push(v.clone().into_string().unwrap());
-                        }
-                    },
-                    _ => {
-                        error!("match_label should be an hashmap");
-                        process::exit(1);
-                    }
-                }
                 match value["config"] {
                     yaml_rust::Yaml::Hash(ref l) => {
                         for (m_name, m_value) in l {
@@ -211,6 +204,7 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
         }
     }
     let mut outputs = Vec::<OutputConfig>::new();
+    debug!("Loading outputs");
     match cfg[0]["outputs"] {
         yaml_rust::Yaml::Array(ref h) => {
             for value in h {
@@ -221,6 +215,7 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                     config: HashMap::new(),
                     match_labels: HashMap::new()
                 };
+                debug!("Output name: {}", output.output_name);
                 match value["match_labels"] {
                     yaml_rust::Yaml::Hash(ref l) => {
                         for (m_name, m_value) in l {

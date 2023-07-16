@@ -1,3 +1,5 @@
+use log::error;
+use std::process;
 use std::collections::HashMap;
 use std::sync::mpsc::{Sender, Receiver};
 use crate::checker::CheckResult;
@@ -26,9 +28,9 @@ pub struct StatsCount {
 
 impl StatsCount {
     pub fn new(config: &ProcessConfig, sender: Sender<CheckResult>, receiver: Receiver<CheckResult>) -> Self {
-        Self {
+        let mut result = Self {
             keep_name: config.keep_name.clone(),
-            stats_to_emit: config.values.clone(),
+            stats_to_emit: Vec::new(),
             stats: HashMap::new(),
             to_process: config.match_value.clone(),
             interval: config.config.get("interval").unwrap().clone().into_i64().unwrap() as i32,
@@ -36,7 +38,19 @@ impl StatsCount {
             labels_to_add: config.labels_to_add.clone(),
             sender: sender,
             receiver: receiver
-        }
+        };
+        match config.config.get("values").unwrap() {
+            yaml_rust::Yaml::Array(ref l) => {
+                for v in l {
+                    result.stats_to_emit.push(v.clone().into_string().unwrap());
+                }
+            },
+            _ => {
+                error!("values should be an array");
+                process::exit(1);
+            }
+        };
+        return result
     }
 }
 
