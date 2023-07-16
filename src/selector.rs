@@ -1,4 +1,5 @@
 use regex::Regex;
+use log;
 use std::sync::mpsc::{Receiver, channel};
 use crate::checker::CheckResult;
 use crate::config::ProcessConfig;
@@ -6,7 +7,7 @@ use crate::config::OutputConfig;
 
 pub fn selector_worker(receiver: Receiver<CheckResult>, processes: Vec<ProcessConfig>, outputs: Vec<OutputConfig>) {
     for probe in receiver {
-        //println!("{:?} {:?}", probe.labels, probe.values);
+        log::debug!("{:?} {:?}", probe.labels, probe.values);
         let mut gone_for_processing = false;
         let (mut to_send, _) = channel();
         'processes: for p in &processes {
