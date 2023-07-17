@@ -1,5 +1,4 @@
 use regex::Regex;
-use log;
 use std::sync::mpsc::{Receiver, channel};
 use crate::checker::CheckResult;
 use crate::config::ProcessConfig;

@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 yaml-rust = "0.4"
-argparse = "0.2.2"
 futures = "*"
 pnet = "*"
 rand = "*"
@@ -17,6 +16,7 @@ tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
 async-stream = "*"
 regex = "1.9.1"
 log = "0.4.19"
+clap = "4.3.14"
 env_logger = "0.10.0"
 
 [build-dependencies]

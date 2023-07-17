@@ -1,5 +1,5 @@
 use log::{error, debug};
-use argparse::{ArgumentParser, StoreTrue, Store};
+use clap;
 use yaml_rust::{YamlLoader, Yaml, yaml};
 use std::fs;
 use std::process;
@@ -7,12 +7,6 @@ use rand::random;
 use std::collections::HashMap;
 use std::sync::mpsc::Sender;
 use crate::checker::{CheckResult};
-
-struct CmdOptions {
-    verbose: bool,
-    remote_listener: bool,
-    name: String,
-}
 
 pub struct ProbeConfig {
     pub name: String,
@@ -44,23 +38,16 @@ pub struct OutputConfig {
 }
 
 pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>) {
-    let mut cmd_opts = CmdOptions{
-        verbose: false,
-        remote_listener: false,
-        name: String::from("none")};
-    {
-        let mut parser = ArgumentParser::new();
-        parser.set_description("yaml config parser");
-        parser.refer(&mut cmd_opts.verbose)
-            .add_option(&["-v"], StoreTrue, "Be verbose");
-        parser.refer(&mut cmd_opts.remote_listener)
-            .add_option(&["-r"], StoreTrue, "Start remote listener");
-        parser.refer(&mut cmd_opts.name)
-            .add_option(&["-c", "--config"], Store, "Config file")
-            .required();
-        parser.parse_args_or_exit();
-    }
-    let text_config: String = match fs::read_to_string(cmd_opts.name) {
+    let app = clap::Command::new("rust-checker")
+        .version("0.0.1")
+        .author("Me")
+        .about("test clap")
+        .arg(clap::arg!(config: -c --config <config> "config file")
+             .required(true))
+        .arg(clap::arg!(remote: -r --remote)
+             .action(clap::ArgAction::SetTrue))
+        .get_matches();
+    let text_config: String = match fs::read_to_string(app.get_one::<String>("config").unwrap()) {
         Ok(config_file) => config_file,
         Err(err) => {
             error!("Failed to load config: {}", err);
@@ -112,7 +99,7 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                 }
                 probes.push(host);
             };
-            if cmd_opts.remote_listener {
+            if *app.get_one::<bool>("remote").unwrap() {
                 probes.push(
                     ProbeConfig{
                         name: format!("remote_listener"),
