@@ -5,8 +5,7 @@ hosts:
     addr: 192.168.0.95:3333
     check: udp_server
     interval: 10
-    config:
-      timeout: 10
+    config: {}
     labels:
       probe_name: dnsA
 
