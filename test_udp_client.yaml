@@ -1,0 +1,24 @@
+---
+
+hosts:
+  foo1:
+    addr: 192.168.0.95:3333
+    check: udp_client
+    interval: 10
+    config:
+      timeout: 10
+      source: 192.168.0.95:3334
+    labels:
+      probe_name: dnsA
+
+processes: []
+
+outputs:
+- output_name: print
+  match_labels:
+    probe_name:
+    - dns.*
+    stats:
+    - rtt
+    - loss
+  config: {}

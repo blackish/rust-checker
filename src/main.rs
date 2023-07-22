@@ -15,6 +15,8 @@ pub mod tcp_connect;
 pub mod output_sender;
 pub mod output_graphite;
 pub mod mtu_pinger;
+pub mod udp_server;
+pub mod udp_client;
 
 use log::info;
 use crate::config::load_config;
@@ -23,6 +25,8 @@ use crate::pinger::{IcmpChecker, icmp_sender, icmp_receiver};
 use crate::mtu_pinger::{IcmpMtuChecker, icmp_mtu_sender, icmp_mtu_receiver};
 use crate::syn_pinger::{SynChecker, syn_sender, syn_receiver};
 use crate::tcp_connect::{TcpConnectChecker, tcp_connect};
+use crate::udp_server::{UdpServerChecker, udp_server};
+use crate::udp_client::{UdpClientChecker, udp_client};
 use crate::selector::selector_worker;
 use crate::stats_process::StatsCount;
 use crate::stats_time_process::StatsTime;
@@ -142,6 +146,18 @@ fn main() {
             let checker = TcpConnectChecker::new(&c);
             let sender_tx = selector_tx.clone();
             let rcv = thread::spawn(move || {tcp_connect(checker, sender_tx)});
+            pinger_handles.push(rcv);
+        } else if c.check_type == "udp_server" {
+            info!("  Starting udp server for {}", c.host);
+            let checker = UdpServerChecker::new(&c);
+            let sender_tx = selector_tx.clone();
+            let rcv = thread::spawn(move || {udp_server(checker, sender_tx)});
+            pinger_handles.push(rcv);
+        } else if c.check_type == "udp_client" {
+            info!("  Starting udp client for {}", c.host);
+            let checker = UdpClientChecker::new(&c);
+            let sender_tx = selector_tx.clone();
+            let rcv = thread::spawn(move || {udp_client(checker, sender_tx)});
             pinger_handles.push(rcv);
         } else if c.check_type == "remote_listener" {
             info!("  Starting remote_listener");

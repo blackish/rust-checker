@@ -32,7 +32,6 @@ pub struct StatsTime {
 
 fn emit_probes(interval: i32, stats: Arc<Mutex<HashMap<String, Vec<EmitStats>>>>, probes: Arc<Mutex<HashMap<String, CheckResult>>>, sender: Sender<CheckResult>) {
     let duration = Duration::from_secs(interval.try_into().unwrap());
-    println!("{:?}", duration);
     loop {
         sleep(duration);
         let mut to_emit_stats = stats.lock().unwrap();
