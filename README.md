@@ -40,7 +40,7 @@ Output values: **rtt**, **loss**. Additional labels: none.
 ```
   <probe name>:
     addr: <target address>
-    check: icmp
+    check: mtu_icmp
     interval: <interval between pings (seconds)>
     config:
       mtu:
