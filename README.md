@@ -73,7 +73,7 @@ Output values: **rtt**, **loss**. Additional labels: none
 ```
   <probe name>:
     addr: <target address>:<target port>
-    check: udp_server
+    check: tcp_connect
     interval: <interval between pings (seconds)>
     config:
       timeout: <timeout for connection>
@@ -100,7 +100,7 @@ Output values: **<sender address>:<sender port>**. Additional labels: none
 ```
   <probe name>:
     addr: <target address>:<target port>
-    check: udp_server
+    check: udp_client
     interval: <interval between pings (seconds)>
     config:
       timeout: <timeout>
