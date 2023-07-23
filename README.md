@@ -54,7 +54,7 @@ Output values: **rtt**, **loss**. Additional labels: none.
 ```
 Output values: **rtt**, **loss**. Additional label: **mtu**.
 
-- **syn** TCP SYN ping. Sends TCP SYN packet, waits for TCP SYN-ACK.
+- **syn** TCP SYN ping. Send TCP SYN packet, wait for TCP SYN-ACK.
 ```
   <probe name>:
     addr: <target address>
@@ -83,7 +83,7 @@ Output values: **rtt**, **loss**. Additional labels: none
 ```
 Output values: **rtt**, **loss**. Additional labels: none
 
-- **udp_server** UDP receiver. Listen for UDP packets and mirror them back.
+- **udp_server** UDP receiver. Wait for UDP packets and mirror them back.
 ```
   <probe name>:
     addr: <local address>:<local port>
@@ -148,7 +148,7 @@ Output values: listed in **values**. Additional labels: **value** if **keep_name
 ```
 Output values: listed in **values**. Additional labels: **value** if **keep_name** is set.
 
-- Histogram. Wait for a number of probes and generates stats. Generate a set of values for an **interval** of time and emit them as a single probe.
+- Histogram. Generate a set of values for an **interval** of time and emit them as a single probe.
 ```
 - process_name: histogram
   config:
