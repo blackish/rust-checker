@@ -1,7 +1,7 @@
 use crate::checker::CheckResult;
 use crate::output::Outputs;
 use crate::config::OutputConfig;
-use yaml_rust::Yaml;
+use yaml_rust::{Yaml};
 use std::net::TcpStream;
 use std::io;
 use std::io::Write;
@@ -107,7 +107,7 @@ impl GraphiteOutput {
                         buffer: Vec::new(),
                         names: Vec::new(),
                         max_buffer: config.config.get("max_buffer")
-                            .unwrap_or(&Yaml::Integer(MAX_BUFFER_SIZE))
+                            .unwrap_or(&Yaml(MAX_BUFFER_SIZE))
                             .clone()
                             .into_i64()
                             .unwrap(),
@@ -137,9 +137,6 @@ impl Outputs for GraphiteOutput {
             }
             received += &(format!(".{} {} {}\n", key, value, SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs().to_string()));
             self.buffer.push(received);
-            if self.buffer.len() > self.max_buffer as usize {
-                self.buffer.swap_remove(0);
-            }
         }
         let to_send: Vec<String> = self.buffer.drain(..).collect();
         for probe_to_send in to_send {
