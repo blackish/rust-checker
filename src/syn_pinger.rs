@@ -3,6 +3,7 @@ extern crate pnet;
 use crate::config::ProbeConfig;
 use std::sync::{Arc, Mutex};
 use crate::checker::CheckResult;
+use log::debug;
 
 use std::time::{Duration, Instant};
 use std::sync::mpsc::Sender;
@@ -142,7 +143,7 @@ pub fn syn_receiver(checker: &Arc<SynChecker>, sender: Sender<CheckResult>) {
                                     values: HashMap::new(),
                                     processes: Vec::new(),
                                     labels: checker.labels.clone()};
-                                to_emit.values.insert(String::from("rtt"), now.duration_since(finished_probe.sent).as_millis() as f32);
+                                to_emit.values.insert(String::from("rtt"), now.duration_since(finished_probe.sent).as_micros() as f32);
                                 sender.send(to_emit).unwrap();
                                 let mut to_emit = CheckResult{
                                     name: checker.name.clone(),
@@ -157,7 +158,7 @@ pub fn syn_receiver(checker: &Arc<SynChecker>, sender: Sender<CheckResult>) {
                     }
                 },
                 None => {
-                    println!("Error decoding tcp packet");
+                    debug!("Error decoding tcp packet");
                 }
             },
             Err(_) => {
