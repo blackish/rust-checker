@@ -1,7 +1,7 @@
 use crate::config::ProbeConfig;
 use std::sync::mpsc::Sender;
-use std::net::{UdpSocket};
-use std::time::{Duration};
+use std::net::UdpSocket;
+use std::time::Duration;
 use crate::checker::CheckResult;
 use std::collections::HashMap;
 

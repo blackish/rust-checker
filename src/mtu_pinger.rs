@@ -2,6 +2,7 @@ extern crate pnet;
 
 use crate::config::ProbeConfig;
 use std::sync::{Arc, Mutex};
+use yaml_rust::Yaml;
 use std::net::{IpAddr, ToSocketAddrs};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -26,6 +27,7 @@ pub struct IcmpMtuChecker {
     source_ip: String,
     name: String,
     probes: Mutex<Vec<Probe>>,
+    precision: i64,
     labels: HashMap<String, String>
 }
 
@@ -46,6 +48,11 @@ impl IcmpMtuChecker {
                             mtu_interval: config.config.get("interval").unwrap().clone().into_i64().unwrap(),
                             source_ip: config.config.get("source_ip").unwrap().clone().into_string().unwrap(),
                             probes: Mutex::new(Vec::<Probe>::new()),
+                            precision: config.config.get("precision")
+                                .unwrap_or(&Yaml::Integer(1))
+                                .clone()
+                                .into_i64()
+                                .unwrap(),
                             labels: config.labels.clone()
                         };
         match config.config.get("mtu").unwrap() {
@@ -154,7 +161,9 @@ pub fn icmp_mtu_receiver(checker: &Arc<IcmpMtuChecker>, sender: Sender<CheckResu
                                         processes: Vec::new(),
                                         labels: checker.labels.clone()};
                                     to_emit.labels.insert(String::from("mtu"), format!("{}", finished_probe.mtu));
-                                    to_emit.values.insert(String::from("rtt"), now.duration_since(finished_probe.sent).as_millis() as f32);
+                                    to_emit.values.insert(
+                                        String::from("rtt"),
+                                        (now.duration_since(finished_probe.sent).as_micros() as f32) / checker.precision as f32);
                                     sender.send(to_emit).unwrap();
                                     let mut to_emit = CheckResult{
                                         name: checker.name.clone(),

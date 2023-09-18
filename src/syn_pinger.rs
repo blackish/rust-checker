@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex};
 use crate::checker::CheckResult;
 use log::debug;
 
+use yaml_rust::Yaml;
 use std::time::{Duration, Instant};
 use std::sync::mpsc::Sender;
 use rand::random;
@@ -14,7 +15,7 @@ use std::thread;
 use crate::pnet::packet::Packet;
 use pnet::transport::{transport_channel, tcp_packet_iter};
 use pnet::transport::TransportChannelType::{Layer3, Layer4};
-use pnet::transport::TransportProtocol::{Ipv4};
+use pnet::transport::TransportProtocol::Ipv4;
 use pnet::packet::ip::IpNextHeaderProtocols;
 use pnet::packet::tcp::{MutableTcpPacket,TcpOption, ipv4_checksum};
 use pnet::util::checksum;
@@ -26,6 +27,7 @@ pub struct SynChecker {
     interval: i64,
     source_ip: String,
     name: String,
+    precision: i64,
     probes: Mutex<Vec<Probe>>,
     labels: HashMap<String, String>
 }
@@ -44,6 +46,11 @@ impl SynChecker {
             source_ip: config.config.get("source_ip").unwrap().clone().into_string().unwrap(),
             probes: Mutex::new(Vec::<Probe>::new()),
             port: config.config.get("port").unwrap().clone().into_i64().unwrap() as u16,
+            precision: config.config.get("precision")
+                .unwrap_or(&Yaml::Integer(1))
+                .clone()
+                .into_i64()
+                .unwrap(),
             labels: config.labels.clone()
         }
     }
@@ -143,7 +150,9 @@ pub fn syn_receiver(checker: &Arc<SynChecker>, sender: Sender<CheckResult>) {
                                     values: HashMap::new(),
                                     processes: Vec::new(),
                                     labels: checker.labels.clone()};
-                                to_emit.values.insert(String::from("rtt"), now.duration_since(finished_probe.sent).as_micros() as f32);
+                                to_emit.values.insert(
+                                    String::from("rtt"),
+                                    (now.duration_since(finished_probe.sent).as_micros() as f32) / checker.precision as f32);
                                 sender.send(to_emit).unwrap();
                                 let mut to_emit = CheckResult{
                                     name: checker.name.clone(),

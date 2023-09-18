@@ -17,6 +17,7 @@ use pnet::packet::icmp::echo_reply::EchoReplyPacket;
 use pnet::util::checksum;
 use std::collections::HashMap;
 use crate::checker::CheckResult;
+use yaml_rust::Yaml;
 
 pub struct IcmpChecker {
     host: String,
@@ -25,6 +26,7 @@ pub struct IcmpChecker {
     source_ip: String,
     name: String,
     probes: Mutex<Vec<Probe>>,
+    precision: i64,
     labels: HashMap<String, String>
 }
 
@@ -42,6 +44,11 @@ impl IcmpChecker {
             mtu: config.config.get("mtu").unwrap().clone().into_i64().unwrap(),
             interval: config.interval.clone(),
             source_ip: config.config.get("source_ip").unwrap().clone().into_string().unwrap(),
+            precision: config.config.get("precision")
+                .unwrap_or(&Yaml::Integer(1))
+                .clone()
+                .into_i64()
+                .unwrap(),
             probes: Mutex::new(Vec::<Probe>::new()),
             labels: config.labels.clone()
         }
@@ -138,7 +145,9 @@ pub fn icmp_receiver(checker: &Arc<IcmpChecker>, sender: Sender<CheckResult>) {
                                         values: HashMap::new(),
                                         processes: Vec::new(),
                                         labels: checker.labels.clone()};
-                                    to_emit.values.insert(String::from("rtt"), now.duration_since(finished_probe.sent).as_millis() as f32);
+                                    to_emit.values.insert(
+                                        String::from("rtt"),
+                                        (now.duration_since(finished_probe.sent).as_micros() as f32) / checker.precision as f32);
                                     sender.send(to_emit).unwrap();
                                     let mut to_emit = CheckResult{
                                         name: checker.name.clone(),

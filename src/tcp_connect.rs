@@ -1,4 +1,5 @@
 use crate::config::ProbeConfig;
+use yaml_rust::Yaml;
 use std::sync::mpsc::Sender;
 use std::net::{TcpStream, Shutdown};
 use std::net::ToSocketAddrs;
@@ -12,6 +13,7 @@ pub struct TcpConnectChecker {
     interval: i64,
     timeout: i64,
     name: String,
+    precision: i64,
     labels: HashMap<String, String>
 }
 
@@ -22,6 +24,11 @@ impl TcpConnectChecker {
             host: config.host.clone(),
             interval: config.interval.clone(),
             timeout: config.config.get("timeout").unwrap().clone().into_i64().unwrap(),
+            precision: config.config.get("precision")
+                .unwrap_or(&Yaml::Integer(1))
+                .clone()
+                .into_i64()
+                .unwrap(),
             labels: config.labels.clone()
         }
     }
@@ -38,7 +45,9 @@ pub fn tcp_connect(checker: TcpConnectChecker, sender: Sender<CheckResult>) {
                 values: HashMap::new(),
                 processes: Vec::new(),
                 labels: checker.labels.clone()};
-            rtt.values.insert(String::from("rtt"), Instant::now().duration_since(start).as_millis() as f32);
+            rtt.values.insert(
+                String::from("rtt"),
+                (Instant::now().duration_since(start).as_micros() as f32) / checker.precision as f32);
             let mut loss = CheckResult{
                 name: checker.name.clone(),
                 values: HashMap::new(),
