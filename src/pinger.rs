@@ -1,5 +1,6 @@
 extern crate pnet;
 
+use log::debug;
 use crate::config::ProbeConfig;
 use std::sync::{Arc, Mutex};
 use std::net::{IpAddr, ToSocketAddrs};
@@ -111,7 +112,7 @@ pub fn icmp_sender(checker: &Arc<IcmpChecker>) {
                 checker.probes.lock().unwrap().push(Probe{identifier: id, seq: seq, sent: Instant::now()});
             },
             Err(e) => {
-                println!("Error sending {:?}", e);
+                debug!("Error sending {:?}", e);
             }
         }
         thread::sleep(Duration::from_secs(checker.interval as u64));
@@ -162,14 +163,14 @@ pub fn icmp_receiver(checker: &Arc<IcmpChecker>, sender: Sender<CheckResult>) {
                         }
                     },
                         None => {
-                            println!("Error getting packet");
+                            debug!("Error getting packet");
                     }
                 },
                 None => {
                 }
             },
             Err(_) => {
-                panic!("Error getting packet");
+                debug!("Error getting packet");
             }
         }
         {

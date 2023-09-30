@@ -6,7 +6,7 @@ use std::process;
 use rand::random;
 use std::collections::HashMap;
 use std::sync::mpsc::Sender;
-use crate::checker::{CheckResult};
+use crate::checker::CheckResult;
 
 pub struct ProbeConfig {
     pub name: String,
@@ -39,9 +39,9 @@ pub struct OutputConfig {
 
 pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>) {
     let app = clap::Command::new("rust-checker")
-        .version("0.0.1")
-        .author("Me")
-        .about("test clap")
+        .version("0.1.0")
+        .author("Andrei Lysov")
+        .about("Network checker")
         .arg(clap::arg!(config: -c --config <config> "config file")
              .required(true))
         .arg(clap::arg!(remote: -r --remote)
@@ -57,7 +57,7 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
     let cfg: Vec::<Yaml> = match YamlLoader::load_from_str(&text_config) {
         Ok(docs) => docs,
         Err(e) => {
-            println!("Failed to parse config: {}", e);
+            error!("Failed to parse config: {}", e);
             process::exit(1);
         },
     };
@@ -173,7 +173,7 @@ pub fn load_config() -> (Vec<ProbeConfig>, Vec<ProcessConfig>, Vec<OutputConfig>
                 match value["config"] {
                     yaml_rust::Yaml::Hash(ref l) => {
                         for (m_name, m_value) in l {
-                            println!("{:?} {:?}", m_name, m_value);
+                            debug!("{:?} {:?}", m_name, m_value);
                             process.config.insert(m_name.clone().into_string().unwrap(), m_value.clone());
                         }
                     },

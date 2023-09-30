@@ -1,3 +1,4 @@
+use log::error;
 use crate::checker::CheckResult;
 use crate::output::Outputs;
 use crate::config::OutputConfig;
@@ -7,8 +8,8 @@ use tonic::Request;
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc;
 
-use remote_checker::remote_probe_client::{RemoteProbeClient};
-use remote_checker::{ProbeRequest};
+use remote_checker::remote_probe_client::RemoteProbeClient;
+use remote_checker::ProbeRequest;
 pub mod remote_checker {
     tonic::include_proto!("rust_checker");
 }
@@ -42,7 +43,7 @@ async fn stream_probe(address: String, mut rx: mpsc::Receiver<ProbeRequest>) {
     let request = Request::new(probe_stream);
     match client.get_probe(request).await {
         Ok(_) => {},
-        Err(_) => println!("Error")
+        Err(_) => error!("Error")
     }
 }
 

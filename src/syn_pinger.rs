@@ -3,7 +3,7 @@ extern crate pnet;
 use crate::config::ProbeConfig;
 use std::sync::{Arc, Mutex};
 use crate::checker::CheckResult;
-use log::debug;
+use log::{debug, error};
 
 use yaml_rust::Yaml;
 use std::time::{Duration, Instant};
@@ -117,7 +117,7 @@ pub fn syn_sender(checker: &Arc<SynChecker>) {
                 checker.probes.lock().unwrap().push(Probe{seq: seq+1, sent: Instant::now()});
             },
             Err(e) => {
-                println!("Error sending {:?}", e)
+                error!("Error sending {:?}", e)
             }
         }
         thread::sleep(Duration::from_secs(checker.interval as u64));

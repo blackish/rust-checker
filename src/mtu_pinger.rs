@@ -1,5 +1,6 @@
 extern crate pnet;
 
+use log::{debug, error};
 use crate::config::ProbeConfig;
 use std::sync::{Arc, Mutex};
 use yaml_rust::Yaml;
@@ -124,7 +125,7 @@ pub fn icmp_mtu_sender(checker: &Arc<IcmpMtuChecker>) {
                     checker.probes.lock().unwrap().push(Probe{identifier: id, seq: seq, mtu: mtu, sent: Instant::now()});
                 },
                 Err(e) => {
-                    println!("Error sending {:?}", e);
+                    error!("Error sending {:?}", e);
                 }
             }
             thread::sleep(Duration::from_secs(checker.mtu_interval as u64));
@@ -179,14 +180,14 @@ pub fn icmp_mtu_receiver(checker: &Arc<IcmpMtuChecker>, sender: Sender<CheckResu
                         }
                     },
                         None => {
-                            println!("Error getting packet");
+                            debug!("Error getting packet");
                     }
                 },
                 None => {
                 }
             },
             Err(_) => {
-                panic!("Error getting packet");
+                debug!("Error getting packet");
             }
         }
         {
