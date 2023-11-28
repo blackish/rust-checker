@@ -1,4 +1,4 @@
-Network testing system written on Rust.
+Network testing system written in Rust.
 It consists of 3 major components:
 - Input modules
 - Processing modules
